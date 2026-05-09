@@ -1,0 +1,41 @@
+Package: ChIPBindVis
+Type: Package
+Title: ChIP-seq Binding Visualization at Target Gene Promoters
+Version: 0.1.0
+Authors@R: person(given = "Changhao",
+                  family = "Kan",
+                  role = c("aut", "cre"),
+                  email = "kanchanghao@example.com")
+Description: One-command, publication-ready ChIP-seq binding visualization
+    at target gene promoters. Given a bigWig signal file and a narrowPeak file,
+    produces a Gviz genome browser track at a single gene promoter and an
+    EnrichedHeatmap across all target gene TSSs, using a built-in Morandi
+    color palette. Targets human (hg38) ENCODE-style data.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: false
+RoxygenNote: 7.3.2
+biocViews:
+Depends:
+    R (>= 4.3.0)
+Imports:
+    Gviz,
+    rtracklayer,
+    GenomicRanges,
+    IRanges,
+    GenomeInfoDb,
+    GenomicFeatures,
+    ChIPseeker,
+    EnrichedHeatmap,
+    ComplexHeatmap,
+    circlize,
+    BiocParallel,
+    AnnotationDbi,
+    TxDb.Hsapiens.UCSC.hg38.knownGene,
+    org.Hs.eg.db,
+    grid,
+    grDevices,
+    stats,
+    utils
+URL: https://github.com/ChanghaoKan/ChIPBindVis
+BugReports: https://github.com/ChanghaoKan/ChIPBindVis/issues
