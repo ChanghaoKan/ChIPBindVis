@@ -9,6 +9,7 @@ plot_chip_heatmap(
   peaks_file,
   gene_symbol,
   tf_name,
+  genome = "hg38",
   tss_window = 2000,
   tss_region = c(-2000, 2000),
   palette = morandi_palette(),
@@ -16,38 +17,55 @@ plot_chip_heatmap(
 )
 }
 \arguments{
-\item{bigwig_file}{Path to a bigWig signal file (\code{.bw} / \code{.bigWig}).}
+\item{bigwig_file}{Path to a bigWig signal file.}
 
-\item{peaks_file}{Path to a narrowPeak / BED peak file.}
+\item{peaks_file}{Path to a narrowPeak or broadPeak file.}
 
-\item{gene_symbol}{HGNC gene symbol of the target gene (e.g. \code{"KIF18A"}).}
+\item{gene_symbol}{Gene symbol of the target gene (e.g. \code{"KIF18A"}
+for human, \code{"Kif18a"} for mouse).}
 
-\item{tf_name}{Display name of the transcription factor (used in the
-track title and main title).}
+\item{tf_name}{Display name of the transcription factor.}
 
-\item{tss_window}{Half-window (bp) around each TSS for the heatmap matrix
-(default \code{2000}).}
+\item{genome}{Reference genome assembly: \code{"hg38"} (default),
+\code{"hg19"}, \code{"mm10"}, or \code{"mm39"}.}
 
-\item{tss_region}{2-element vector defining the promoter region used by
-\pkg{ChIPseeker} when annotating peaks to genes
+\item{tss_window}{Half-window (bp) around each TSS for the signal matrix
+(default \code{2000}). X-axis labels are generated automatically from this
+value (e.g. \code{"-2kb"}, \code{"+2kb"}).}
+
+\item{tss_region}{2-element integer vector defining the promoter window
+used by \pkg{ChIPseeker} when assigning peaks to genes
 (default \code{c(-2000, 2000)}).}
 
-\item{palette}{A list of colors, typically from \code{\link{morandi_palette}}.}
+\item{palette}{A named list of colors, typically from
+\code{\link{morandi_palette}}.}
 
 \item{plot}{Logical. If \code{TRUE} (default) the heatmap is drawn on the
 active graphics device.}
 }
 \value{
-Invisibly, a list with components:
+Invisibly, a list with:
 \describe{
-  \item{matrix}{The signal matrix (rows ordered by total signal, decreasing).}
+  \item{matrix}{Signal matrix, rows sorted by total signal (decreasing).}
   \item{target_rank}{Integer rank of the query gene (\code{NA} if absent).}
   \item{n_targets}{Number of TSSs in the heatmap.}
   \item{tss_gr}{The \code{GRanges} of TSSs used.}
 }
 }
 \description{
-Annotates peaks to nearest genes via \pkg{ChIPseeker}, builds a TSS-centered
-\pkg{EnrichedHeatmap} (\eqn{\pm}2 kb) of the bigWig signal across all target
-genes, ranks them by total signal, and highlights the query gene.
+Annotates peaks to nearest genes via \pkg{ChIPseeker}, builds a
+TSS-centered \pkg{EnrichedHeatmap} of the bigWig signal across all target
+genes, ranks them by total signal, and highlights the query gene. Signal
+windows for negative-strand genes are automatically reversed so that the
+left side of every row corresponds to upstream sequence.
+}
+\examples{
+\dontrun{
+res <- plot_chip_heatmap("E2F8.bigWig", "E2F8.narrowPeak", "KIF18A", "E2F8")
+res$target_rank
+
+# Mouse
+plot_chip_heatmap("E2f8.bigWig", "E2f8.narrowPeak", "Kif18a", "E2f8",
+                  genome = "mm10")
+}
 }

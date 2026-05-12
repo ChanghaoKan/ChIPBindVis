@@ -9,6 +9,7 @@ plot_chip_track(
   peaks_file,
   gene_symbol,
   tf_name,
+  genome = "hg38",
   extend = 5000,
   palette = morandi_palette(),
   cytoband_file = NULL,
@@ -18,32 +19,49 @@ plot_chip_track(
 \arguments{
 \item{bigwig_file}{Path to a bigWig signal file (\code{.bw} / \code{.bigWig}).}
 
-\item{peaks_file}{Path to a narrowPeak / BED peak file.}
+\item{peaks_file}{Path to a narrowPeak or broadPeak file.}
 
-\item{gene_symbol}{HGNC gene symbol of the target gene (e.g. \code{"KIF18A"}).}
+\item{gene_symbol}{Gene symbol of the target gene (e.g. \code{"KIF18A"}
+for human, \code{"Kif18a"} for mouse).}
 
-\item{tf_name}{Display name of the transcription factor (used in the
-track title and main title).}
+\item{tf_name}{Display name of the transcription factor (used in track
+and main titles).}
 
-\item{extend}{Half-window in bp around the TSS (default \code{5000}, i.e.
-TSS \eqn{\pm} 5 kb).}
+\item{genome}{Reference genome assembly: \code{"hg38"} (default),
+\code{"hg19"}, \code{"mm10"}, or \code{"mm39"}.}
 
-\item{palette}{A list of colors, typically from \code{\link{morandi_palette}}.}
+\item{extend}{Half-window in bp around the TSS (default \code{5000}).}
 
-\item{cytoband_file}{Optional path to a user-supplied hg38
-\code{cytoBand.txt(.gz)}. If \code{NULL}, the file is auto-downloaded
-from UCSC and cached on first use.}
+\item{palette}{A named list of colors, typically from
+\code{\link{morandi_palette}}.}
+
+\item{cytoband_file}{Optional path to a pre-downloaded
+\code{cytoBand.txt(.gz)} for the chosen genome. If \code{NULL}, the file
+is auto-downloaded from UCSC and cached on first use.}
 
 \item{plot}{Logical. If \code{TRUE} (default) the figure is drawn on the
 active graphics device.}
 }
 \value{
-Invisibly, a list with \code{tracks} (the list of Gviz track
-  objects), \code{sizes} (relative track sizes), \code{from}, \code{to},
-  and \code{target} (the resolved gene info).
+Invisibly, a list with \code{tracks}, \code{sizes}, \code{from},
+\code{to}, and \code{target} (the resolved gene info list).
 }
 \description{
 Builds a multi-track Gviz figure (ideogram, axis, signal, peaks, TSS,
-gene model) centered on the TSS of \code{gene_symbol}, with signal taken
-from \code{bigwig_file} and peak rectangles from \code{peaks_file}.
+gene model) centered on the TSS of \code{gene_symbol}. Supports human
+(hg38, hg19) and mouse (mm10, mm39) assemblies.
+}
+\examples{
+\dontrun{
+# Human (hg38, default)
+plot_chip_track("E2F8.bigWig", "E2F8.narrowPeak", "KIF18A", "E2F8")
+
+# Mouse (mm10)
+plot_chip_track("E2f8.bigWig", "E2f8.narrowPeak", "Kif18a", "E2f8",
+                genome = "mm10")
+
+# Wider view window
+plot_chip_track("E2F8.bigWig", "E2F8.narrowPeak", "KIF18A", "E2F8",
+                extend = 10000)
+}
 }

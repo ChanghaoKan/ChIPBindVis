@@ -9,6 +9,7 @@ chip_bindingVis(
   peaks_file,
   gene_symbol,
   tf_name,
+  genome = "hg38",
   extend = 5000,
   tss_window = 2000,
   tss_region = c(-2000, 2000),
@@ -23,54 +24,69 @@ chip_bindingVis(
 )
 }
 \arguments{
-\item{bigwig_file}{Path to a bigWig signal file (\code{.bw} / \code{.bigWig}).}
+\item{bigwig_file}{Path to a bigWig signal file.}
 
-\item{peaks_file}{Path to a narrowPeak / BED peak file.}
+\item{peaks_file}{Path to a narrowPeak or broadPeak file.}
 
-\item{gene_symbol}{HGNC gene symbol of the target gene (e.g. \code{"KIF18A"}).}
+\item{gene_symbol}{Gene symbol of the target gene (e.g. \code{"KIF18A"}
+for human, \code{"Kif18a"} for mouse).}
 
 \item{tf_name}{Display name of the transcription factor.}
 
-\item{extend}{Half-window in bp around the TSS for the track view
+\item{genome}{Reference genome assembly: \code{"hg38"} (default),
+\code{"hg19"}, \code{"mm10"}, or \code{"mm39"}.}
+
+\item{extend}{Half-window in bp around TSS for the track plot
 (default \code{5000}).}
 
-\item{tss_window}{Half-window (bp) around each TSS for the heatmap matrix
+\item{tss_window}{Half-window in bp for the heatmap signal matrix
 (default \code{2000}).}
 
-\item{tss_region}{Promoter region used by \pkg{ChIPseeker}
+\item{tss_region}{Promoter window for peak-to-gene annotation
 (default \code{c(-2000, 2000)}).}
 
-\item{palette}{Color palette, typically from \code{\link{morandi_palette}}.}
+\item{palette}{Color palette list from \code{\link{morandi_palette}}.}
 
-\item{cytoband_file}{Optional path to a user-supplied hg38
-\code{cytoBand.txt(.gz)}.}
+\item{cytoband_file}{Optional path to a pre-downloaded cytoBand file.
+If \code{NULL}, downloaded from UCSC and cached on first use.}
 
-\item{save_pdf}{Logical. If \code{TRUE}, save the two figures to a PDF
-instead of drawing on screen (default \code{FALSE}).}
+\item{save_pdf}{Logical. Save both figures to a PDF (default \code{FALSE}).}
 
-\item{pdf_file}{Output PDF path. Used only when \code{save_pdf = TRUE}.
-Default: \code{paste0(tf_name, "_", gene_symbol, "_ChIPBindVis.pdf")}.}
+\item{pdf_file}{Output PDF path. Defaults to
+\code{<tf_name>_<gene_symbol>_ChIPBindVis.pdf}.}
 
-\item{pdf_width, pdf_height}{PDF dimensions in inches for the track page.}
+\item{pdf_width, pdf_height}{Track-page dimensions in inches (default 8 x 4).}
 
-\item{pdf_width_heatmap, pdf_height_heatmap}{Override the heatmap-page size.}
+\item{pdf_width_heatmap, pdf_height_heatmap}{Heatmap-page dimensions in
+inches (default 6 x 8).}
 }
 \value{
-Invisibly, a list with elements \code{track} and \code{heatmap}.
+Invisibly, a list with elements \code{track} and \code{heatmap}
+(return values of the two underlying functions).
 }
 \description{
 High-level wrapper that calls \code{\link{plot_chip_track}} and
-\code{\link{plot_chip_heatmap}} in sequence. Both figures are drawn on
-the active graphics device, or saved to a single multi-page PDF when
-\code{save_pdf = TRUE}.
+\code{\link{plot_chip_heatmap}} in sequence. Supports human (hg38, hg19)
+and mouse (mm10, mm39) assemblies.
 }
 \examples{
 \dontrun{
+# Human hg38 (default)
 chip_bindingVis(
-  bigwig_file = "ENCFF354YZN.bigWig",
-  peaks_file  = "ENCFF049BWK.bed",
+  bigwig_file = "E2F8.bigWig",
+  peaks_file  = "E2F8.narrowPeak",
   gene_symbol = "KIF18A",
-  tf_name     = "E2F1"
+  tf_name     = "E2F8"
+)
+
+# Mouse mm10, save to PDF
+chip_bindingVis(
+  bigwig_file = "E2f8_mm10.bigWig",
+  peaks_file  = "E2f8_mm10.narrowPeak",
+  gene_symbol = "Kif18a",
+  tf_name     = "E2f8",
+  genome      = "mm10",
+  save_pdf    = TRUE
 )
 }
 }

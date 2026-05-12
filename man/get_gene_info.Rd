@@ -2,25 +2,33 @@
 % Please edit documentation in R/get_gene_info.R
 \name{get_gene_info}
 \alias{get_gene_info}
-\title{Resolve an HGNC gene symbol to coordinates (hg38)}
+\title{Resolve a gene symbol to genomic coordinates}
 \usage{
-get_gene_info(gene_symbol)
+get_gene_info(gene_symbol, genome = "hg38")
 }
 \arguments{
-\item{gene_symbol}{Character scalar. HGNC gene symbol (e.g. \code{"KIF18A"}).}
+\item{gene_symbol}{Character scalar. Gene symbol (e.g. \code{"KIF18A"} for
+human, \code{"Kif18a"} for mouse — case must match the database).}
+
+\item{genome}{Character scalar. Reference genome assembly. One of
+\code{"hg38"} (default), \code{"hg19"}, \code{"mm10"}, \code{"mm39"}.}
 }
 \value{
-A named list with elements \code{symbol}, \code{chr},
-\code{start}, \code{end}, \code{strand}, \code{tss}.
+A named list with elements \code{symbol}, \code{chr}, \code{start},
+\code{end}, \code{strand}, \code{tss}, and \code{genome}.
 }
 \description{
-Looks up an HGNC gene symbol in \pkg{org.Hs.eg.db} and
-\pkg{TxDb.Hsapiens.UCSC.hg38.knownGene}, and returns its chromosome,
-start, end, strand, and TSS position.
+Looks up a gene symbol in the appropriate annotation databases for the
+chosen genome and returns its chromosome, start, end, strand, and TSS
+position. For positive-strand genes TSS equals \code{start}; for
+negative-strand genes it equals \code{end}.
 }
 \examples{
 \dontrun{
-info <- get_gene_info("KIF18A")
-info$tss
+# Human (hg38)
+get_gene_info("KIF18A")
+
+# Mouse (mm10) — note mouse-style capitalisation
+get_gene_info("Kif18a", genome = "mm10")
 }
 }
