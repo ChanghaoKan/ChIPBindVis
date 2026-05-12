@@ -1,16 +1,18 @@
 Package: ChIPBindVis
 Type: Package
 Title: ChIP-seq Binding Visualization at Target Gene Promoters
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: person(given = "Changhao",
                   family = "Kan",
                   role = c("aut", "cre"),
                   email = "kanchanghao@example.com")
 Description: One-command, publication-ready ChIP-seq binding visualization
-    at target gene promoters. Given a bigWig signal file and a narrowPeak file,
-    produces a Gviz genome browser track at a single gene promoter and an
-    EnrichedHeatmap across all target gene TSSs, using a built-in Morandi
-    color palette. Targets human (hg38) ENCODE-style data.
+    at target gene promoters. Given a bigWig signal file and a narrowPeak
+    (or broadPeak) file, produces (A) a Gviz genome-browser track centered
+    on a target gene's TSS and (B) a strand-aware EnrichedHeatmap across all
+    peak-annotated target gene TSSs, with the query gene highlighted.
+    Supports human (hg38, hg19) and mouse (mm10, mm39) reference assemblies.
+    Annotation packages for each genome are loaded on demand.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: false
@@ -31,11 +33,17 @@ Imports:
     circlize,
     BiocParallel,
     AnnotationDbi,
-    TxDb.Hsapiens.UCSC.hg38.knownGene,
-    org.Hs.eg.db,
     grid,
     grDevices,
     stats,
+    tools,
     utils
+Suggests:
+    TxDb.Hsapiens.UCSC.hg38.knownGene,
+    TxDb.Hsapiens.UCSC.hg19.knownGene,
+    TxDb.Mmusculus.UCSC.mm10.knownGene,
+    TxDb.Mmusculus.UCSC.mm39.knownGene,
+    org.Hs.eg.db,
+    org.Mm.eg.db
 URL: https://github.com/ChanghaoKan/ChIPBindVis
 BugReports: https://github.com/ChanghaoKan/ChIPBindVis/issues
