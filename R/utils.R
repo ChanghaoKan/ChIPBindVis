@@ -94,11 +94,12 @@
     p
   }
 
-  con <- gzfile(path)
-  on.exit(close(con), add = TRUE)
+  # Pass path directly — read.table handles .gz natively.
+  # Previously used gzfile() + on.exit(close()), but read.table closes the
+  # connection internally, causing "invalid connection" on the second close.
   cyto <- utils::read.table(
-    con, sep = "\t",
-    col.names    = c("chrom", "chromStart", "chromEnd", "name", "gieStain"),
+    path, sep = "\t",
+    col.names        = c("chrom", "chromStart", "chromEnd", "name", "gieStain"),
     stringsAsFactors = FALSE
   )
 

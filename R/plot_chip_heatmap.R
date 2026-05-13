@@ -1,213 +1,214 @@
-#' Plot a ChIP-seq EnrichedHeatmap across all target gene TSSs (Figure B)
+#' Plot a ChIP-seq Gviz track at a target gene's promoter (Figure A)
 #'
-#' Annotates peaks to nearest genes via \pkg{ChIPseeker}, builds a
-#' TSS-centered \pkg{EnrichedHeatmap} of the bigWig signal across all target
-#' genes, ranks them by total signal, and highlights the query gene.
-#' Supports human (hg38 / hg19) and mouse (mm10 / mm39) assemblies.
+#' Builds a multi-track Gviz figure (ideogram, axis, signal, peaks, TSS,
+#' gene model) centered on the TSS of \code{gene_symbol}. Supports human
+#' (hg38 / hg19) and mouse (mm10 / mm39) assemblies.
 #'
-#' @inheritParams plot_chip_track
-#' @param tss_window Half-window (bp) around each TSS for the heatmap matrix
-#'   (default \code{2000}). Axis labels ("-Xkb" / "+Xkb") are generated
-#'   automatically from this value.
-#' @param tss_region 2-element integer vector defining the promoter window
-#'   used by \pkg{ChIPseeker} when assigning peaks to genes
-#'   (default \code{c(-2000, 2000)}).
-#' @param plot Logical. If \code{TRUE} (default) the heatmap is drawn.
+#' @param bigwig_file Path to a bigWig signal file (\code{.bw} /
+#'   \code{.bigWig}).
+#' @param peaks_file Path to a narrowPeak or broadPeak file.
+#' @param gene_symbol Gene symbol of the target gene (e.g. \code{"KIF18A"}
+#'   for human or \code{"Kif18a"} for mouse).
+#' @param tf_name Display name of the transcription factor (used in track
+#'   and main titles).
+#' @param genome Reference genome assembly: \code{"hg38"} (default),
+#'   \code{"hg19"}, \code{"mm10"}, or \code{"mm39"}.
+#' @param extend Half-window in bp around the TSS (default \code{5000}).
+#' @param palette A named list of colors, typically from
+#'   \code{\link{morandi_palette}}.
+#' @param cytoband_file Optional path to a pre-downloaded
+#'   \code{cytoBand.txt(.gz)} for the chosen genome. If \code{NULL}, the file
+#'   is auto-downloaded from UCSC and cached on first use.
+#' @param plot Logical. If \code{TRUE} (default) the figure is drawn on
+#'   the active graphics device.
 #'
-#' @return Invisibly, a list with components:
-#' \describe{
-#'   \item{matrix}{Signal matrix (rows ordered by total signal, decreasing).}
-#'   \item{target_rank}{Integer rank of the query gene (\code{NA} if absent).}
-#'   \item{n_targets}{Number of TSSs in the heatmap.}
-#'   \item{tss_gr}{The \code{GRanges} of TSSs used.}
-#' }
-#'
-#' @details
-#' **Strand handling**: \code{normalizeToMatrix} respects the \code{strand}
-#' slot of the \code{target} \code{GRanges}. For negative-strand genes the
-#' signal window is automatically reversed so that the left side of every
-#' heatmap row corresponds to upstream sequence, making the "-Xkb" / "+Xkb"
-#' axis labels biologically consistent across all rows regardless of strand.
-#'
+#' @return Invisibly, a list with \code{tracks}, \code{sizes}, \code{from},
+#'   \code{to}, and \code{target} (the resolved gene info).
 #' @export
-plot_chip_heatmap <- function(bigwig_file,
-                              peaks_file,
-                              gene_symbol,
-                              tf_name,
-                              genome     = "hg38",
-                              tss_window = 2000,
-                              tss_region = c(-2000, 2000),
-                              palette    = morandi_palette(),
-                              plot       = TRUE) {
+#'
+#' @examples
+#' \dontrun{
+#' # Human (hg38, default)
+#' plot_chip_track("E2F8.bigWig", "E2F8.narrowPeak", "KIF18A", "E2F8")
+#'
+#' # Mouse (mm10)
+#' plot_chip_track("E2f8.bigWig", "E2f8.narrowPeak", "Kif18a", "E2f8",
+#'                 genome = "mm10")
+#' }
+plot_chip_track <- function(bigwig_file,
+                            peaks_file,
+                            gene_symbol,
+                            tf_name,
+                            genome        = "hg38",
+                            extend        = 5000,
+                            palette       = morandi_palette(),
+                            cytoband_file = NULL,
+                            plot          = TRUE) {
 
   TARGET <- get_gene_info(gene_symbol, genome = genome)
   res    <- .genome_resources(genome)
   txdb   <- .load_txdb(res$txdb)
-  orgdb  <- .load_orgdb(res$orgdb)
-  peaks  <- .read_peaks(peaks_file)
 
-  # ── Peak → gene annotation ──────────────────────────────────
-  message("Annotating peaks to genes (ChIPseeker)...")
-  peakAnno <- ChIPseeker::annotatePeak(
-    peaks, tssRegion = tss_region,
-    TxDb = txdb, annoDb = res$orgdb, verbose = FALSE
+  message("Genome: ", genome)
+  message("Transcription factor: ", tf_name)
+  message("Target gene: ", TARGET$symbol, "  ", TARGET$chr, ":",
+          format(TARGET$start, big.mark = ","), "-",
+          format(TARGET$end,   big.mark = ","),
+          "  (", TARGET$strand, "-strand)")
+  message("TSS: ", format(TARGET$tss, big.mark = ","))
+
+  peaks      <- .read_peaks(peaks_file)
+  view_start <- TARGET$tss - extend
+  view_end   <- TARGET$tss + extend
+
+  # Read only the view window from bigWig to determine y-axis ceiling
+  bw_region <- rtracklayer::import(
+    bigwig_file, format = "BigWig",
+    selection = GenomicRanges::GRanges(
+      TARGET$chr, IRanges::IRanges(view_start, view_end))
+  )
+  y_max <- ceiling(max(bw_region$score, na.rm = TRUE) * 1.1)
+  if (is.na(y_max) || y_max <= 0) y_max <- 30
+
+  # ── IdeogramTrack ───────────────────────────────────────────
+  # .get_cytoband filters to TARGET$chr + resets rownames, which prevents
+  # Gviz's "breaks not unique" error on narrow windows.
+  # showBandId = FALSE avoids a separate label-overflow bug.
+  cyto_chr <- .get_cytoband(genome, TARGET$chr, cytoband_file)
+
+  itrack <- tryCatch({
+    Gviz::IdeogramTrack(
+      genome     = genome,
+      chromosome = TARGET$chr,
+      bands      = cyto_chr,
+      showBandId = FALSE,
+      fontcolor  = palette$axis,
+      fontsize   = 9
+    )
+  }, error = function(e) {
+    message("IdeogramTrack failed (skipped): ", conditionMessage(e))
+    NULL
+  })
+
+  gtrack <- Gviz::GenomeAxisTrack(
+    col = palette$axis, fontcolor = palette$axis, fontsize = 10
   )
 
-  target_genes <- unique(stats::na.omit(as.data.frame(peakAnno)$SYMBOL))
-  # Always include the query gene even if it has no local peak
-  if (!TARGET$symbol %in% target_genes)
-    target_genes <- c(target_genes, TARGET$symbol)
-
-  # ── TSS GRanges: one per gene, standard chromosomes only ────
-  all_tss <- GenomicFeatures::promoters(txdb, upstream = 0, downstream = 1)
-  all_tss <- all_tss[!duplicated(all_tss$tx_name)]
-  all_tss <- all_tss[as.character(GenomeInfoDb::seqnames(all_tss)) %in% res$std_chr]
-  all_tss <- GenomeInfoDb::keepSeqlevels(all_tss, res$std_chr,
-                                         pruning.mode = "coarse")
-
-  # TX → Entrez → Symbol mapping
-  tx2gene <- AnnotationDbi::select(
-    txdb, keys = all_tss$tx_name,
-    columns = c("TXNAME", "GENEID"), keytype = "TXNAME"
-  )
-  gene2symbol <- AnnotationDbi::select(
-    orgdb, keys = unique(stats::na.omit(tx2gene$GENEID)),
-    columns = c("ENTREZID", "SYMBOL"), keytype = "ENTREZID"
-  )
-  tx2gene        <- merge(tx2gene, gene2symbol,
-                          by.x = "GENEID", by.y = "ENTREZID", all.x = TRUE)
-  all_tss$SYMBOL <- tx2gene$SYMBOL[match(all_tss$tx_name, tx2gene$TXNAME)]
-
-  all_tss_filtered <- all_tss[all_tss$SYMBOL %in% target_genes]
-  all_tss_filtered <- all_tss_filtered[!duplicated(all_tss_filtered$SYMBOL)]
-
-  message(tf_name, " target genes: ", length(target_genes))
-  message("TSSs in heatmap: ", length(all_tss_filtered))
-
-  # ── Signal matrix ───────────────────────────────────────────
-  # normalizeToMatrix flips the window for negative-strand targets,
-  # so upstream is always on the left of the resulting matrix
-  message("Computing signal matrix (strand-aware)...")
-  bw  <- rtracklayer::import(bigwig_file, format = "BigWig")
-  mat <- EnrichedHeatmap::normalizeToMatrix(
-    signal       = bw,
-    target       = all_tss_filtered,
-    extend       = tss_window,
-    mean_mode    = "w0",
-    value_column = "score",
-    background   = 0,
-    smooth       = TRUE
+  # ── Signal track ────────────────────────────────────────────
+  signal_track <- Gviz::DataTrack(
+    range            = bigwig_file,
+    genome           = genome,
+    chromosome       = TARGET$chr,
+    name             = tf_name,
+    type             = "polygon",
+    fill.mountain    = palette$signal_fill,
+    col.mountain     = palette$signal,
+    ylim             = c(0, y_max),
+    col.axis         = palette$axis,
+    fontcolor.title  = palette$axis,
+    background.title = palette$bg,
+    cex.title        = 1.1,
+    rotation.title   = 0
   )
 
-  # Sort rows by total signal (highest → lowest)
-  order_idx   <- order(rowSums(mat, na.rm = TRUE), decreasing = TRUE)
-  mat_ordered <- mat[order_idx, ]
-
-  target_idx  <- which(all_tss_filtered$SYMBOL == TARGET$symbol)
-  target_rank <- if (length(target_idx) > 0L) {
-    rk <- which(order_idx == target_idx[1])
-    message(TARGET$symbol, " rank: ", rk, "/", nrow(mat),
-            " (top ", round(rk / nrow(mat) * 100, 1), "%)")
-    rk
-  } else {
-    NA_integer_
-  }
-
-  # ── Color ramp: 0 → median → 95th percentile ────────────────
-  col_fun <- circlize::colorRamp2(
-    c(0,
-      stats::quantile(mat_ordered, 0.5,  na.rm = TRUE),
-      stats::quantile(mat_ordered, 0.95, na.rm = TRUE)),
-    c(palette$heatmap_low, palette$heatmap_mid, palette$heatmap_high)
+  # ── Peaks in view ───────────────────────────────────────────
+  peak_region   <- GenomicRanges::GRanges(
+    TARGET$chr, IRanges::IRanges(view_start, view_end)
   )
+  peaks_in_view <- peaks[IRanges::overlapsAny(peaks, peak_region)]
 
-  # ── Axis labels derived from tss_window ─────────────────────
-  lbl_left  <- paste0("-", .bp_label(tss_window))
-  lbl_right <- paste0("+", .bp_label(tss_window))
-
-  # ── Heatmap ─────────────────────────────────────────────────
-  # axis_name_gp col="transparent": hide EnrichedHeatmap's default axis
-  # labels ("-2000 / start / 2000") while keeping their layout space,
-  # then draw our own labels via decorate_heatmap_body below.
-  ht <- EnrichedHeatmap::EnrichedHeatmap(
-    mat_ordered,
-    name            = tf_name,
-    col             = col_fun,
-    axis_name_gp    = grid::gpar(col = "transparent", fontsize = 0.001),
-    top_annotation  = ComplexHeatmap::HeatmapAnnotation(
-      enriched = EnrichedHeatmap::anno_enriched(
-        gp     = grid::gpar(col  = palette$signal,
-                            lwd  = 2,
-                            fill = palette$signal_fill),
-        height = grid::unit(3, "cm")
-      ),
-      show_annotation_name = FALSE
-    ),
-    column_title    = paste0(tf_name, " Binding at Target Gene TSS (",
-                             TARGET$symbol, " highlighted)"),
-    column_title_gp = grid::gpar(fontsize = 14, fontface = "bold",
-                                 col = palette$axis),
-    show_row_names  = FALSE,
-    heatmap_legend_param = list(
-      title         = tf_name,
-      title_gp      = grid::gpar(fontsize = 10, fontface = "bold"),
-      labels_gp     = grid::gpar(fontsize = 9),
-      legend_height = grid::unit(4, "cm")
-    ),
-    border         = FALSE,
-    use_raster     = TRUE,
-    raster_quality = 3,
-    pos_line       = FALSE
-  )
-
-  # Right-side annotation marking the query gene's row
-  if (!is.na(target_rank)) {
-    ht <- ht + ComplexHeatmap::rowAnnotation(
-      mark = ComplexHeatmap::anno_mark(
-        at        = target_rank,
-        labels    = TARGET$symbol,
-        labels_gp = grid::gpar(fontsize = 10, fontface = "bold",
-                               col = palette$peak),
-        link_gp   = grid::gpar(col = palette$peak, lwd = 1.5)
-      ),
-      show_annotation_name = FALSE
+  peak_track <- NULL
+  if (length(peaks_in_view) > 0L) {
+    peak_track <- Gviz::AnnotationTrack(
+      peaks_in_view, name = "Peaks",
+      fill = palette$peak, col = palette$peak, stacking = "dense",
+      fontcolor.title = palette$axis, background.title = palette$bg,
+      rotation.title = 0
     )
   }
 
-  if (isTRUE(plot)) {
-    ComplexHeatmap::draw(ht, padding = grid::unit(c(5, 5, 5, 5), "mm"))
+  # ── TSS marker (±50 bp) ─────────────────────────────────────
+  tss_track <- Gviz::AnnotationTrack(
+    GenomicRanges::GRanges(
+      TARGET$chr, IRanges::IRanges(TARGET$tss - 50, TARGET$tss + 50)
+    ),
+    name = "TSS", fill = palette$tss, col = palette$tss,
+    fontcolor.title = palette$axis, background.title = palette$bg,
+    rotation.title = 0
+  )
 
-    # Draw custom x-axis labels (replaces the suppressed defaults)
-    ComplexHeatmap::decorate_heatmap_body(tf_name, {
-      for (pos in list(c(0, lbl_left, "plain"),
-                       c(0.5, "TSS",     "bold"),
-                       c(1,   lbl_right, "plain"))) {
-        grid::grid.text(
-          pos[[2]],
-          x    = grid::unit(as.numeric(pos[[1]]), "npc"),
-          y    = grid::unit(-2, "mm"),
-          just = "top",
-          gp   = grid::gpar(fontsize = 9, col = palette$axis,
-                            fontface = pos[[3]])
-        )
-      }
-    })
+  # ── Gene model ──────────────────────────────────────────────
+  orgdb <- .load_orgdb(res$orgdb)
 
-    # Top-left annotation: query gene rank
-    if (!is.na(target_rank)) {
-      grid::grid.text(
-        paste0(TARGET$symbol, ": #", target_rank, "/", nrow(mat),
-               " (top ", round(target_rank / nrow(mat) * 100, 1), "%)"),
-        x    = grid::unit(0.02, "npc"),
-        y    = grid::unit(0.98, "npc"),
-        just = c("left", "top"),
-        gp   = grid::gpar(fontsize = 9, col = palette$peak, fontface = "bold")
-      )
-    }
+  gene_track <- Gviz::GeneRegionTrack(
+    txdb,
+    genome               = genome,
+    chromosome           = TARGET$chr,
+    name                 = "Genes",
+    transcriptAnnotation = "symbol",
+    collapseTranscripts  = "meta",
+    fill                 = palette$gene,
+    col                  = palette$gene,
+    fontcolor.group      = palette$axis,
+    fontsize.group       = 11,
+    fontface.group       = "bold.italic",
+    fontcolor.title      = palette$axis,
+    background.title     = palette$bg,
+    rotation.title       = 0
+  )
+
+  # GeneRegionTrack from TxDb has no symbol column — Gviz falls back to
+  # transcript ID (ENST...). Inject gene symbols by mapping Entrez -> symbol.
+  entrez_ids <- as.character(gene_track@range$gene)
+  if (length(entrez_ids) > 0 && any(!is.na(entrez_ids))) {
+    sym_map <- suppressMessages(AnnotationDbi::select(
+      orgdb,
+      keys    = unique(stats::na.omit(entrez_ids)),
+      columns = "SYMBOL",
+      keytype = "ENTREZID"
+    ))
+    symbols <- sym_map$SYMBOL[match(entrez_ids, sym_map$ENTREZID)]
+    symbols[is.na(symbols)] <- entrez_ids[is.na(symbols)]
+    gene_track@range$symbol <- symbols
   }
 
-  invisible(list(matrix      = mat_ordered,
-                 target_rank = target_rank,
-                 n_targets   = nrow(mat),
-                 tss_gr      = all_tss_filtered))
+  # ── Assemble track list ─────────────────────────────────────
+  # core_tracks excludes itrack (added separately if available)
+  if (!is.null(peak_track)) {
+    core_tracks <- list(gtrack, signal_track, peak_track, tss_track, gene_track)
+    core_sizes  <- c(1, 4, 0.5, 0.3, 1.5)
+  } else {
+    core_tracks <- list(gtrack, signal_track, tss_track, gene_track)
+    core_sizes  <- c(1, 4, 0.3, 1.5)
+  }
+
+  if (!is.null(itrack)) {
+    track_list  <- c(list(itrack), core_tracks)
+    track_sizes <- c(0.5, core_sizes)
+  } else {
+    track_list  <- core_tracks
+    track_sizes <- core_sizes
+  }
+
+  if (isTRUE(plot)) {
+    # chromosome must be explicit to prevent Gviz from guessing wrong seqlevel
+    Gviz::plotTracks(
+      track_list,
+      from             = view_start,
+      to               = view_end,
+      chromosome       = TARGET$chr,
+      sizes            = track_sizes,
+      background.panel = palette$bg,
+      background.title = palette$bg,
+      col.border.title = NA,
+      main             = paste0(tf_name, " ChIP-seq at ",
+                                TARGET$symbol, " Promoter"),
+      cex.main         = 1.4,
+      fontface.main    = 2,
+      col.main         = palette$axis
+    )
+  }
+
+  invisible(list(tracks = track_list, sizes = track_sizes,
+                 from = view_start, to = view_end, target = TARGET))
 }
