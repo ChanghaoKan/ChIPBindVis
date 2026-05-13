@@ -51,11 +51,11 @@ plot_chip_track <- function(bigwig_file,
                             palette       = morandi_palette(),
                             cytoband_file = NULL,
                             plot          = TRUE) {
-  
+
   TARGET <- get_gene_info(gene_symbol, genome = genome)
   res    <- .genome_resources(genome)
   txdb   <- .load_txdb(res$txdb)
-  
+
   message("Genome: ", genome)
   message("Transcription factor: ", tf_name)
   message("Target gene: ", TARGET$symbol, "  ", TARGET$chr, ":",
@@ -63,11 +63,11 @@ plot_chip_track <- function(bigwig_file,
           format(TARGET$end,   big.mark = ","),
           "  (", TARGET$strand, "-strand)")
   message("TSS: ", format(TARGET$tss, big.mark = ","))
-  
+
   peaks      <- .read_peaks(peaks_file)
   view_start <- TARGET$tss - extend
   view_end   <- TARGET$tss + extend
-  
+
   # Read only the view window from bigWig to determine y-axis ceiling
   bw_region <- rtracklayer::import(
     bigwig_file, format = "BigWig",
@@ -76,13 +76,13 @@ plot_chip_track <- function(bigwig_file,
   )
   y_max <- ceiling(max(bw_region$score, na.rm = TRUE) * 1.1)
   if (is.na(y_max) || y_max <= 0) y_max <- 30
-  
+
   # ── IdeogramTrack ───────────────────────────────────────────
   # .get_cytoband filters to TARGET$chr + resets rownames, which prevents
   # Gviz's "breaks not unique" error on narrow windows.
   # showBandId = FALSE avoids a separate label-overflow bug.
   cyto_chr <- .get_cytoband(genome, TARGET$chr, cytoband_file)
-  
+
   itrack <- tryCatch({
     Gviz::IdeogramTrack(
       genome     = genome,
@@ -96,11 +96,11 @@ plot_chip_track <- function(bigwig_file,
     message("IdeogramTrack failed (skipped): ", conditionMessage(e))
     NULL
   })
-  
+
   gtrack <- Gviz::GenomeAxisTrack(
     col = palette$axis, fontcolor = palette$axis, fontsize = 10
   )
-  
+
   # ── Signal track ────────────────────────────────────────────
   signal_track <- Gviz::DataTrack(
     range            = bigwig_file,
@@ -117,13 +117,13 @@ plot_chip_track <- function(bigwig_file,
     cex.title        = 1.1,
     rotation.title   = 0
   )
-  
+
   # ── Peaks in view ───────────────────────────────────────────
   peak_region   <- GenomicRanges::GRanges(
     TARGET$chr, IRanges::IRanges(view_start, view_end)
   )
   peaks_in_view <- peaks[IRanges::overlapsAny(peaks, peak_region)]
-  
+
   peak_track <- NULL
   if (length(peaks_in_view) > 0L) {
     peak_track <- Gviz::AnnotationTrack(
@@ -133,7 +133,7 @@ plot_chip_track <- function(bigwig_file,
       rotation.title = 0
     )
   }
-  
+
   # ── TSS marker (±50 bp) ─────────────────────────────────────
   tss_track <- Gviz::AnnotationTrack(
     GenomicRanges::GRanges(
@@ -143,7 +143,7 @@ plot_chip_track <- function(bigwig_file,
     fontcolor.title = palette$axis, background.title = palette$bg,
     rotation.title = 0
   )
-  
+
   # ── Gene model ──────────────────────────────────────────────
   gene_track <- Gviz::GeneRegionTrack(
     txdb,
@@ -161,7 +161,7 @@ plot_chip_track <- function(bigwig_file,
     background.title     = palette$bg,
     rotation.title       = 0
   )
-  
+
   # ── Strand-aware label placement ────────────────────────────
   # Gviz's `just.group` is a track-level parameter and can't be set per
   # gene. To place each gene's symbol on its upstream side, we split
@@ -173,17 +173,17 @@ plot_chip_track <- function(bigwig_file,
   strand_per_exon <- as.character(
     GenomicRanges::strand(gene_track@range)
   )
-  
+
   gene_track_plus <- gene_track
   gene_track_plus@range <- gene_track@range[strand_per_exon == "+"]
   Gviz::displayPars(gene_track_plus)$just.group <- "left"
   gene_track_plus@name <- ""        # blank title to avoid duplicate "Genes"
-  
+
   gene_track_minus <- gene_track
   gene_track_minus@range <- gene_track@range[strand_per_exon == "-"]
   Gviz::displayPars(gene_track_minus)$just.group <- "right"
   gene_track_minus@name <- "Genes"  # keep the title on this one
-  
+
   # Drop empty strand tracks so we don't waste a row when only one strand
   # has genes in the view window.
   gene_tracks <- list()
@@ -202,7 +202,7 @@ plot_chip_track <- function(bigwig_file,
     gene_tracks <- list(gene_track)
     gene_sizes  <- 1.5
   }
-  
+
   # ── Assemble track list ─────────────────────────────────────
   # core_tracks excludes itrack (added separately if available)
   if (!is.null(peak_track)) {
@@ -214,7 +214,7 @@ plot_chip_track <- function(bigwig_file,
                      gene_tracks)
     core_sizes  <- c(1, 4, 0.3, gene_sizes)
   }
-  
+
   if (!is.null(itrack)) {
     track_list  <- c(list(itrack), core_tracks)
     track_sizes <- c(0.5, core_sizes)
@@ -222,7 +222,7 @@ plot_chip_track <- function(bigwig_file,
     track_list  <- core_tracks
     track_sizes <- core_sizes
   }
-  
+
   if (isTRUE(plot)) {
     # chromosome must be explicit to prevent Gviz from guessing wrong seqlevel
     Gviz::plotTracks(
@@ -241,7 +241,7 @@ plot_chip_track <- function(bigwig_file,
       col.main         = palette$axis
     )
   }
-  
+
   invisible(list(tracks = track_list, sizes = track_sizes,
                  from = view_start, to = view_end, target = TARGET))
 }
