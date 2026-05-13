@@ -59,38 +59,71 @@ plot_chip_heatmap <- function(bigwig_file,
     annoDb    = res$orgdb,
     verbose   = FALSE
   )
-  target_genes <- unique(stats::na.omit(as.data.frame(peakAnno)$SYMBOL))
+  anno_df      <- as.data.frame(peakAnno)
+  target_genes <- if ("SYMBOL" %in% colnames(anno_df)) {
+    unique(stats::na.omit(anno_df$SYMBOL))
+  } else character(0)
   # Ensure the highlighted target is in the set even if it has no direct peak
   if (!TARGET$symbol %in% target_genes)
     target_genes <- c(target_genes, TARGET$symbol)
 
-  # ── Step 2: all TSS → filter to target genes → de-duplicate ──
+  # ── Step 2: all TSS → filter to standard chromosomes ─────────
   all_tss <- GenomicFeatures::promoters(txdb, upstream = 0, downstream = 1)
   all_tss <- all_tss[!duplicated(all_tss$tx_name)]
   # Keep only standard chromosomes for the chosen genome
-  all_tss <- all_tss[GenomeInfoDb::seqnames(all_tss) %in% res$std_chr]
+  keep <- as.character(GenomeInfoDb::seqnames(all_tss)) %in% res$std_chr
+  all_tss <- all_tss[keep]
   all_tss <- GenomeInfoDb::keepSeqlevels(
     all_tss, res$std_chr, pruning.mode = "coarse"
   )
 
-  # Map transcript -> gene -> symbol
-  tx2gene <- AnnotationDbi::select(
-    txdb,
-    keys    = all_tss$tx_name,
-    columns = c("TXNAME", "GENEID"),
-    keytype = "TXNAME"
-  )
-  gene2sym <- AnnotationDbi::select(
-    orgdb,
-    keys    = unique(stats::na.omit(tx2gene$GENEID)),
-    columns = c("ENTREZID", "SYMBOL"),
-    keytype = "ENTREZID"
-  )
-  tx2gene <- merge(tx2gene, gene2sym,
-                   by.x = "GENEID", by.y = "ENTREZID", all.x = TRUE)
-  all_tss$SYMBOL <- tx2gene$SYMBOL[match(all_tss$tx_name, tx2gene$TXNAME)]
+  if (length(all_tss) == 0L)
+    stop("No TSS rows after chromosome filtering. Check that the TxDb ",
+         "matches the genome assembly (", genome, ").", call. = FALSE)
 
-  tss_use <- all_tss[all_tss$SYMBOL %in% target_genes]
+  # ── Step 3: transcript -> gene -> symbol via mapIds ──────────
+  # Use mapIds (chained, vector-in/vector-out) instead of select()+merge()
+  # to avoid edge cases where merge drops the join key and breaks match().
+  tx_names <- as.character(all_tss$tx_name)
+
+  entrez_per_tx <- suppressMessages(tryCatch(
+    AnnotationDbi::mapIds(
+      txdb,
+      keys      = tx_names,
+      column    = "GENEID",
+      keytype   = "TXNAME",
+      multiVals = "first"
+    ),
+    error = function(e) {
+      message("Transcript -> gene mapping failed: ", conditionMessage(e))
+      stats::setNames(rep(NA_character_, length(tx_names)), tx_names)
+    }
+  ))
+  entrez_per_tx <- as.character(entrez_per_tx)
+
+  valid_entrez <- unique(stats::na.omit(entrez_per_tx))
+  symbol_per_entrez <- if (length(valid_entrez) > 0L) {
+    suppressMessages(tryCatch(
+      AnnotationDbi::mapIds(
+        orgdb,
+        keys      = valid_entrez,
+        column    = "SYMBOL",
+        keytype   = "ENTREZID",
+        multiVals = "first"
+      ),
+      error = function(e) {
+        message("Entrez -> symbol mapping failed: ", conditionMessage(e))
+        stats::setNames(rep(NA_character_, length(valid_entrez)), valid_entrez)
+      }
+    ))
+  } else {
+    stats::setNames(character(0), character(0))
+  }
+  all_tss$SYMBOL <- unname(symbol_per_entrez[entrez_per_tx])
+
+  # Filter to target genes, one TSS per symbol
+  tss_use <- all_tss[!is.na(all_tss$SYMBOL) &
+                       all_tss$SYMBOL %in% target_genes]
   tss_use <- tss_use[!duplicated(tss_use$SYMBOL)]
 
   message("Targets: ", length(target_genes),
@@ -100,7 +133,7 @@ plot_chip_heatmap <- function(bigwig_file,
     stop("No TSS rows passed filtering. Check that peaks_file contains ",
          "binding sites overlapping known TSSs.", call. = FALSE)
 
-  # ── Step 3: build signal matrix around each TSS ──────────────
+  # ── Step 4: build signal matrix around each TSS ──────────────
   bw  <- rtracklayer::import(bigwig_file, format = "BigWig")
   mat <- EnrichedHeatmap::normalizeToMatrix(
     signal       = bw,
@@ -124,7 +157,7 @@ plot_chip_heatmap <- function(bigwig_file,
     message(TARGET$symbol, " rank: ", target_rank, "/", nrow(mat),
             " (top ", round(target_rank / nrow(mat) * 100, 1), "%)")
 
-  # ── Step 4: color mapping (0 / 50% / 95% three-point ramp) ───
+  # ── Step 5: color mapping (0 / 50% / 95% three-point ramp) ───
   col_fun <- circlize::colorRamp2(
     c(0,
       stats::quantile(mat_ordered, 0.5,  na.rm = TRUE),
@@ -132,9 +165,9 @@ plot_chip_heatmap <- function(bigwig_file,
     c(palette$heatmap_low, palette$heatmap_mid, palette$heatmap_high)
   )
 
-  # ── Step 5: assemble EnrichedHeatmap ─────────────────────────
+  # ── Step 6: assemble EnrichedHeatmap ─────────────────────────
   # axis_name_gp = transparent: we draw our own -Nkb / TSS / +Nkb labels
-  # via decorate_heatmap_body so that label spacing scales with tss_window
+  # via decorate_heatmap_body so label spacing scales with tss_window
   ht <- EnrichedHeatmap::EnrichedHeatmap(
     mat_ordered,
     name = tf_name, col = col_fun,
@@ -158,13 +191,13 @@ plot_chip_heatmap <- function(bigwig_file,
       labels_gp     = grid::gpar(fontsize = 9),
       legend_height = grid::unit(4, "cm")
     ),
-    border        = FALSE,
-    use_raster    = TRUE,
+    border         = FALSE,
+    use_raster     = TRUE,
     raster_quality = 3,
-    pos_line      = FALSE
+    pos_line       = FALSE
   )
 
-  # Mark the highlighted target with an external link annotation
+  # External link to the highlighted target row
   if (!is.na(target_rank)) {
     ht <- ht + ComplexHeatmap::rowAnnotation(
       mark = ComplexHeatmap::anno_mark(
