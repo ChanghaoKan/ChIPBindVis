@@ -1,7 +1,7 @@
 Package: ChIPBindVis
 Type: Package
 Title: ChIP-seq Binding Visualization at Target Gene Promoters
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: person(given = "Changhao",
                   family = "Kan",
                   role = c("aut", "cre"),
