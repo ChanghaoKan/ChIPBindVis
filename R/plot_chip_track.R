@@ -55,6 +55,7 @@ plot_chip_track <- function(bigwig_file,
   TARGET <- get_gene_info(gene_symbol, genome = genome)
   res    <- .genome_resources(genome)
   txdb   <- .load_txdb(res$txdb)
+  orgdb  <- .load_orgdb(res$orgdb)
 
   message("Genome: ", genome)
   message("Transcription factor: ", tf_name)
@@ -78,9 +79,6 @@ plot_chip_track <- function(bigwig_file,
   if (is.na(y_max) || y_max <= 0) y_max <- 30
 
   # ── IdeogramTrack ───────────────────────────────────────────
-  # .get_cytoband filters to TARGET$chr + resets rownames, which prevents
-  # Gviz's "breaks not unique" error on narrow windows.
-  # showBandId = FALSE avoids a separate label-overflow bug.
   cyto_chr <- .get_cytoband(genome, TARGET$chr, cytoband_file)
 
   itrack <- tryCatch({
@@ -162,14 +160,41 @@ plot_chip_track <- function(bigwig_file,
     rotation.title       = 0
   )
 
+  # ── Inject gene symbols ─────────────────────────────────────
+  # GeneRegionTrack built from a TxDb stores only Entrez IDs in @range$gene,
+  # so transcriptAnnotation = "symbol" falls back to displaying transcript
+  # IDs (ENST.../ENSMUST...). Map Entrez -> SYMBOL via OrgDb and write the
+  # result to @range$symbol so labels render as e.g. "KIF18A" / "METTL15".
+  entrez_ids <- as.character(gene_track@range$gene)
+  if (length(entrez_ids) > 0L && any(!is.na(entrez_ids))) {
+    sym_lookup <- tryCatch(
+      AnnotationDbi::mapIds(
+        orgdb,
+        keys      = unique(stats::na.omit(entrez_ids)),
+        column    = "SYMBOL",
+        keytype   = "ENTREZID",
+        multiVals = "first"
+      ),
+      error = function(e) {
+        message("Symbol lookup failed (using Entrez IDs instead): ",
+                conditionMessage(e))
+        NULL
+      }
+    )
+    if (!is.null(sym_lookup)) {
+      symbols <- unname(sym_lookup[entrez_ids])
+      # Fall back to Entrez ID when a symbol is missing
+      symbols[is.na(symbols)] <- entrez_ids[is.na(symbols)]
+      gene_track@range$symbol <- symbols
+    }
+  }
+
   # ── Strand-aware label placement ────────────────────────────
   # Gviz's `just.group` is a track-level parameter and can't be set per
   # gene. To place each gene's symbol on its upstream side, we split
   # gene_track into two sub-tracks by strand:
   #   + strand → TSS at left of gene body  → just.group = "left"
   #   - strand → TSS at right of gene body → just.group = "right"
-  # This puts every label on open space upstream of its TSS, away from
-  # the signal peaks and TSS marker.
   strand_per_exon <- as.character(
     GenomicRanges::strand(gene_track@range)
   )
@@ -182,7 +207,7 @@ plot_chip_track <- function(bigwig_file,
   gene_track_minus <- gene_track
   gene_track_minus@range <- gene_track@range[strand_per_exon == "-"]
   Gviz::displayPars(gene_track_minus)$just.group <- "right"
-  gene_track_minus@name <- "Genes"  # keep the title on this one
+  gene_track_minus@name <- "Genes"
 
   # Drop empty strand tracks so we don't waste a row when only one strand
   # has genes in the view window.
@@ -196,15 +221,14 @@ plot_chip_track <- function(bigwig_file,
     gene_tracks <- c(gene_tracks, list(gene_track_plus))
     gene_sizes  <- c(gene_sizes, 0.8)
   }
-  # Fallback: no genes at all in the view → keep original combined track
-  # so plotTracks still has a "Genes" row instead of crashing.
+  # Fallback: no genes in view → keep combined track so plotTracks
+  # still has a "Genes" row
   if (length(gene_tracks) == 0L) {
     gene_tracks <- list(gene_track)
     gene_sizes  <- 1.5
   }
 
   # ── Assemble track list ─────────────────────────────────────
-  # core_tracks excludes itrack (added separately if available)
   if (!is.null(peak_track)) {
     core_tracks <- c(list(gtrack, signal_track, peak_track, tss_track),
                      gene_tracks)
@@ -224,7 +248,6 @@ plot_chip_track <- function(bigwig_file,
   }
 
   if (isTRUE(plot)) {
-    # chromosome must be explicit to prevent Gviz from guessing wrong seqlevel
     Gviz::plotTracks(
       track_list,
       from             = view_start,
