@@ -25,9 +25,9 @@ ChIPBindVis answers this in **one function call** and **two figures**:
 
 | | |
 |---|---|
-| **Figure A — Track Plot** <img width="1007" height="503" alt="image" src="https://github.com/user-attachments/assets/46f276dc-1351-4d3c-8868-ce3a703bb5d6" />
+| **Figure  — Track Plot Enrichment Heatmap ** <img width="1007" height="503" alt="image" src="https://github.com/user-attachments/assets/46f276dc-1351-4d3c-8868-ce3a703bb5d6" />
 
- *Gviz genome browser view centered on TSS* | **Figure B — Enrichment Heatmap** <br> *EnrichedHeatmap across all TF target gene TSSs* |
+ *Gviz genome browser view centered on TSS EnrichedHeatmap across all TF target gene TSSs* |
 
 Built with a consistent **Morandi color palette** — muted, print-friendly tones ready for manuscripts without any tweaking.
 
