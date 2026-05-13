@@ -23,13 +23,12 @@ You have a **bigWig** signal file and a **narrowPeak** (or **broadPeak**) file f
 
 ChIPBindVis answers this in **one function call** and **two figures**:
 
-| | |
+| Figure | Preview |
 |---|---|
-| **Figure  — Track Plot Enrichment Heatmap ** <img width="1007" height="503" alt="image" src="https://github.com/user-attachments/assets/46f276dc-1351-4d3c-8868-ce3a703bb5d6" />
+| **Track Plot & Enrichment Heatmap** | <img width="1007" height="503" alt="image" src="https://github.com/user-attachments/assets/46f276dc-1351-4d3c-8868-ce3a703bb5d6" /> |
+| Description | *Gviz genome browser tracks centered on transcription start sites (TSSs) together with EnrichedHeatmap signals across TF target gene promoters.* |
 
- *Gviz genome browser view centered on TSS EnrichedHeatmap across all TF target gene TSSs* |
-
-Built with a consistent **Morandi color palette** — muted, print-friendly tones ready for manuscripts without any tweaking.
+Built with a consistent **Morandi color palette** — muted, publication-ready tones designed for clean manuscript integration without additional styling.
 
 ---
 
