@@ -1,11 +1,11 @@
 Package: ChIPBindVis
 Type: Package
 Title: ChIP-seq Binding Visualization at Target Gene Promoters
-Version: 0.2.1
+Version: 0.2.0
 Authors@R: person(given = "Changhao",
                   family = "Kan",
                   role = c("aut", "cre"),
-                  email = "kanchanghao@example.com")
+                  email = "kch_ynu@163.com")
 Description: One-command, publication-ready ChIP-seq binding visualization
     at target gene promoters. Given a bigWig signal file and a narrowPeak
     (or broadPeak) file, produces (A) a Gviz genome-browser track centered
