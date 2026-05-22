@@ -1,0 +1,41 @@
+# R session files
+.Rhistory
+.Rapp.history
+.RData
+.Ruserdata
+
+# RStudio
+.Rproj.user/
+*.Rproj
+
+# R package build artifacts
+*.tar.gz
+*.tgz
+src/*.o
+src/*.so
+src/*.dll
+*.so
+*.o
+*.dll
+
+# Built vignettes
+inst/doc
+
+# Coverage / check output
+.Rcheck/
+*.Rcheck/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor temp files
+*~
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Local environment / secrets
+.Renviron
+.env
