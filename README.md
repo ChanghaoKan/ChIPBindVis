@@ -287,10 +287,11 @@ This R package was developed with assistance from **Claude** (Anthropic).
 
 ## Citation
 
-If you use ChIPBindVis in your research, please cite:
+If you use ChIPBindVis in your research, please cite it as below. The DOI
+shown is the **concept DOI**, which always resolves to the latest version.
 
 > Kan, C. (2026). ChIPBindVis: One-command publication-ready ChIP-seq
-> binding visualization at target gene promoters (v0.2.0). Zenodo.
+> binding visualization at target gene promoters. Zenodo.
 > <https://doi.org/10.5281/zenodo.19613844>
 
 ```bibtex
@@ -299,12 +300,36 @@ If you use ChIPBindVis in your research, please cite:
   title     = {{ChIPBindVis: One-command publication-ready ChIP-seq
                binding visualization at target gene promoters}},
   year      = {2026},
-  version   = {v0.2.0},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.19613845},
-  url       = {https://doi.org/10.5281/zenodo.19613845}
+  doi       = {10.5281/zenodo.19613844},
+  url       = {https://doi.org/10.5281/zenodo.19613844}
 }
 ```
+
+To cite a specific version (recommended for reproducibility), use the
+version-specific DOI shown on that version's Zenodo page.## Citation
+
+If you use ChIPBindVis in your research, please cite it as below. The DOI
+shown is the **concept DOI**, which always resolves to the latest version.
+
+> Kan, C. (2026). ChIPBindVis: One-command publication-ready ChIP-seq
+> binding visualization at target gene promoters. Zenodo.
+> <https://doi.org/10.5281/zenodo.19613844>
+
+```bibtex
+@software{kan2026chipbindvis,
+  author    = {Kan, Changhao},
+  title     = {{ChIPBindVis: One-command publication-ready ChIP-seq
+               binding visualization at target gene promoters}},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.19613844},
+  url       = {https://doi.org/10.5281/zenodo.19613844}
+}
+```
+
+To cite a specific version (recommended for reproducibility), use the
+version-specific DOI shown on that version's Zenodo page.
 
 ## License
 
