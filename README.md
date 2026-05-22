@@ -291,7 +291,7 @@ If you use ChIPBindVis in your research, please cite:
 
 > Kan, C. (2026). ChIPBindVis: One-command publication-ready ChIP-seq
 > binding visualization at target gene promoters (v0.2.0). Zenodo.
-> <https://doi.org/10.5281/zenodo.19613845>
+> <https://doi.org/10.5281/zenodo.19613844>
 
 ```bibtex
 @software{kan2026chipbindvis,
