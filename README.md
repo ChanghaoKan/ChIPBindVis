@@ -9,7 +9,7 @@
 
 *One-command publication-ready ChIP-seq binding visualization at target gene promoters*
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20349422.svg)](https://doi.org/10.5281/zenodo.20349422)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19613844.svg)](https://doi.org/10.5281/zenodo.19613844)
 ![R >= 4.3](https://img.shields.io/badge/R->=4.3-blue?logo=r)
 ![Bioconductor](https://img.shields.io/badge/Bioconductor-powered-green)
 ![License: MIT](https://img.shields.io/badge/license-MIT-yellow)
