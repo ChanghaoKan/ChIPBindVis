@@ -31,7 +31,6 @@ Imports:
     EnrichedHeatmap,
     ComplexHeatmap,
     circlize,
-    BiocParallel,
     AnnotationDbi,
     grid,
     grDevices,
