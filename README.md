@@ -289,16 +289,16 @@ This R package was developed with assistance from **Claude** (Anthropic).
 
 If you use ChIPBindVis in your research, please cite:
 
-> Kan, C. (2025). ChIPBindVis: One-command publication-ready ChIP-seq
+> Kan, C. (2026). ChIPBindVis: One-command publication-ready ChIP-seq
 > binding visualization at target gene promoters (v0.2.0). Zenodo.
 > <https://doi.org/10.5281/zenodo.19613845>
 
 ```bibtex
-@software{kan2025chipbindvis,
+@software{kan2026chipbindvis,
   author    = {Kan, Changhao},
   title     = {{ChIPBindVis: One-command publication-ready ChIP-seq
                binding visualization at target gene promoters}},
-  year      = {2025},
+  year      = {2026},
   version   = {v0.2.0},
   publisher = {Zenodo},
   doi       = {10.5281/zenodo.19613845},
