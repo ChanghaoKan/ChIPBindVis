@@ -19,7 +19,7 @@
 
 ## What it does
 
-You have a **bigWig** signal file and a **narrowPeak** (or **broadPeak**) file from a ChIP-seq experiment. You want to know: *does my transcription factor bind the promoter of gene X, and how does that compare to all its other targets?*
+You have a **bigWig** signal file and a **bed** (or **broadPeak**) file from a ChIP-seq experiment. You want to know: *does my transcription factor bind the promoter of gene X, and how does that compare to all its other targets?*
 
 ChIPBindVis answers this in **one function call** and **two figures**:
 
@@ -97,7 +97,7 @@ library(ChIPBindVis)
 
 chip_bindingVis(
   bigwig_file = "ENCFF354YZN.bigWig",
-  peaks_file  = "ENCFF049BWK.narrowPeak",
+  peaks_file  = "ENCFF049BWK.bed",
   gene_symbol = "KIF18A",
   tf_name     = "E2F8",
   genome      = "hg38"        # explicit — do not omit
@@ -109,7 +109,7 @@ chip_bindingVis(
 ```r
 chip_bindingVis(
   bigwig_file = "signal_hg19.bigWig",
-  peaks_file  = "peaks_hg19.narrowPeak",
+  peaks_file  = "peaks_hg19.bed",
   gene_symbol = "KIF18A",
   tf_name     = "E2F8",
   genome      = "hg19"        # explicit
@@ -122,7 +122,7 @@ chip_bindingVis(
 # Mouse gene symbols use title-case (e.g. "Kif18a", not "KIF18A")
 chip_bindingVis(
   bigwig_file = "E2f8_mm10.bigWig",
-  peaks_file  = "E2f8_mm10.narrowPeak",
+  peaks_file  = "E2f8_mm10.bed",
   gene_symbol = "Kif18a",     # mouse capitalisation
   tf_name     = "E2f8",
   genome      = "mm10"        # explicit
@@ -134,7 +134,7 @@ chip_bindingVis(
 ```r
 chip_bindingVis(
   bigwig_file = "E2f8_mm39.bigWig",
-  peaks_file  = "E2f8_mm39.narrowPeak",
+  peaks_file  = "E2f8_mm39.bed",
   gene_symbol = "Kif18a",
   tf_name     = "E2f8",
   genome      = "mm39"        # explicit
@@ -146,7 +146,7 @@ chip_bindingVis(
 ```r
 chip_bindingVis(
   bigwig_file = "ENCFF354YZN.bigWig",
-  peaks_file  = "ENCFF049BWK.narrowPeak",
+  peaks_file  = "ENCFF049BWK.bed",
   gene_symbol = "KIF18A",
   tf_name     = "E2F8",
   genome      = "hg38",
@@ -164,7 +164,7 @@ chip_bindingVis(
 # Figure A only — Gviz track, human hg38
 plot_chip_track(
   bigwig_file = "signal.bw",
-  peaks_file  = "peaks.narrowPeak",
+  peaks_file  = "peaks.bed",
   gene_symbol = "KIF18A",
   tf_name     = "E2F8",
   genome      = "hg38",
@@ -174,7 +174,7 @@ plot_chip_track(
 # Figure A only — mouse mm10
 plot_chip_track(
   bigwig_file = "signal.bw",
-  peaks_file  = "peaks.narrowPeak",
+  peaks_file  = "peaks.bed",
   gene_symbol = "Kif18a",
   tf_name     = "E2f8",
   genome      = "mm10"
@@ -183,7 +183,7 @@ plot_chip_track(
 # Figure B only — heatmap, returns ranking info
 res <- plot_chip_heatmap(
   bigwig_file = "signal.bw",
-  peaks_file  = "peaks.narrowPeak",
+  peaks_file  = "peaks.bed",
   gene_symbol = "KIF18A",
   tf_name     = "E2F8",
   genome      = "hg38"
@@ -202,7 +202,7 @@ get_gene_info("Kif18a",  genome = "mm39")  # mouse mm39
 ```r
 chip_bindingVis(
   bigwig_file = "signal.bw",
-  peaks_file  = "peaks.narrowPeak",
+  peaks_file  = "peaks.bed",
   gene_symbol = "MYC",
   tf_name     = "MAX",
   genome      = "hg38",
@@ -223,7 +223,7 @@ download, supply a pre-downloaded copy:
 ```r
 chip_bindingVis(
   bigwig_file   = "signal.bw",
-  peaks_file    = "peaks.narrowPeak",
+  peaks_file    = "peaks.bed",
   gene_symbol   = "KIF18A",
   tf_name       = "E2F8",
   genome        = "hg38",
@@ -250,7 +250,7 @@ chip_bindingVis(
 | File | Format | Source |
 |---|---|---|
 | Signal track | `.bigWig` / `.bw` | ENCODE, GEO, or your own pipeline |
-| Called peaks | `.narrowPeak` or `.broadPeak` | MACS2, ENCODE |
+| Called peaks | `.bed` or `.broadPeak` | MACS2, ENCODE |
 | Cytoband *(optional)* | `cytoBand.txt.gz` | UCSC (auto-downloaded on first use) |
 
 > **broadPeak** files (e.g. from histone ChIP-seq) are automatically detected
