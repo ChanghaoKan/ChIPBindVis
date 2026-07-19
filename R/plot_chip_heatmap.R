@@ -1,14 +1,17 @@
 #' Plot a TSS enrichment heatmap of TF ChIP-seq signal (Figure B)
 #'
 #' Builds an \code{\link[EnrichedHeatmap]{EnrichedHeatmap}} of TF ChIP-seq
-#' signal centered on the TSS of every peak-annotated target gene, sorted
-#' by total signal. The user-specified \code{gene_symbol} is highlighted
-#' with an external label, its rank is annotated in the top-left corner,
-#' and the x-axis is labelled \code{-Nkb / TSS / +Nkb}.
+#' signal centered on a gene-level TSS for genes with a promoter-associated
+#' peak, sorted by total signal. If the user-specified \code{gene_symbol} has
+#' a promoter-associated peak, it is highlighted and ranked. Otherwise it is
+#' not added to the heatmap, and the result reports that status explicitly.
+#' The x-axis is labelled \code{-Nkb / TSS / +Nkb}.
 #'
-#' Target genes are obtained via \code{ChIPseeker::annotatePeak} on the
-#' peak file. Each target gene contributes one canonical TSS (duplicates
-#' collapsed by SYMBOL).
+#' Peak-to-gene annotations are obtained with
+#' \code{ChIPseeker::annotatePeak}; only rows classified as promoter peaks
+#' within \code{tss_region} contribute genes. Each gene contributes a
+#' gene-level TSS derived from its TxDb gene range. This is not an isoform-
+#' specific or canonical-transcript TSS assignment.
 #'
 #' @inheritParams plot_chip_track
 #' @param tss_window Half-window in bp around each TSS for the signal
@@ -21,8 +24,9 @@
 #'
 #' @return Invisibly, a list with \code{matrix} (sorted normalized
 #'   matrix), \code{order} (row order indices), \code{rank} (rank of the
-#'   target gene), \code{n_targets} (total rows), and \code{target}
-#'   (resolved gene info).
+#'   query gene, or \code{NA}), \code{n_targets} (total rows),
+#'   \code{query_promoter_peak_detected} (logical), \code{query_status}
+#'   (character), and \code{target} (resolved gene info).
 #' @export
 #'
 #' @examples
@@ -51,7 +55,7 @@ plot_chip_heatmap <- function(bigwig_file,
           " | Target: ", TARGET$symbol)
 
   # ── Step 1: peak → gene annotation ───────────────────────────
-  message("Annotating peaks to extract target gene set...")
+  message("Annotating peaks to extract promoter-associated gene set...")
   peakAnno <- ChIPseeker::annotatePeak(
     peaks,
     tssRegion = tss_region,
@@ -59,49 +63,51 @@ plot_chip_heatmap <- function(bigwig_file,
     annoDb    = res$orgdb,
     verbose   = FALSE
   )
-  anno_df      <- as.data.frame(peakAnno)
-  target_genes <- if ("SYMBOL" %in% colnames(anno_df)) {
-    unique(stats::na.omit(anno_df$SYMBOL))
-  } else character(0)
-  # Ensure the highlighted target is in the set even if it has no direct peak
-  if (!TARGET$symbol %in% target_genes)
-    target_genes <- c(target_genes, TARGET$symbol)
+  anno_df <- as.data.frame(peakAnno)
+  target_status <- .promoter_target_status(anno_df, TARGET$symbol)
+  target_genes <- target_status$target_genes
+  query_promoter_peak_detected <-
+    target_status$query_promoter_peak_detected
 
-  # ── Step 2: all TSS → filter to standard chromosomes ─────────
-  all_tss <- GenomicFeatures::promoters(txdb, upstream = 0, downstream = 1)
-  all_tss <- all_tss[!duplicated(all_tss$tx_name)]
+  if (!query_promoter_peak_detected) {
+    message(
+      "No promoter-associated peak was assigned to ", TARGET$symbol,
+      " within tss_region = c(", paste(tss_region, collapse = ", "),
+      "); the query gene will not be added to or ranked in the heatmap."
+    )
+  }
+
+  # Step 2: derive one gene-level TSS per representable TxDb gene
+  # GenomicFeatures::genes() supplies one range per representable gene.
+  # Converting those ranges to one-base promoters yields a transparent
+  # gene-level TSS proxy rather than arbitrarily selecting one transcript.
+  all_genes <- suppressWarnings(GenomicFeatures::genes(txdb))
   # Keep only standard chromosomes for the chosen genome
-  keep <- as.character(GenomeInfoDb::seqnames(all_tss)) %in% res$std_chr
-  all_tss <- all_tss[keep]
-  all_tss <- GenomeInfoDb::keepSeqlevels(
-    all_tss, res$std_chr, pruning.mode = "coarse"
+  keep <- as.character(GenomeInfoDb::seqnames(all_genes)) %in% res$std_chr
+  all_genes <- all_genes[keep]
+  standard_levels <- intersect(
+    res$std_chr, GenomeInfoDb::seqlevels(all_genes)
+  )
+  all_genes <- GenomeInfoDb::keepSeqlevels(
+    all_genes, standard_levels, pruning.mode = "coarse"
   )
 
-  if (length(all_tss) == 0L)
-    stop("No TSS rows after chromosome filtering. Check that the TxDb ",
+  if (length(all_genes) == 0L)
+    stop("No gene ranges after chromosome filtering. Check that the TxDb ",
          "matches the genome assembly (", genome, ").", call. = FALSE)
 
-  # ── Step 3: transcript -> gene -> symbol via mapIds ──────────
-  # Use mapIds (chained, vector-in/vector-out) instead of select()+merge()
-  # to avoid edge cases where merge drops the join key and breaks match().
-  tx_names <- as.character(all_tss$tx_name)
-
-  entrez_per_tx <- suppressMessages(tryCatch(
-    AnnotationDbi::mapIds(
-      txdb,
-      keys      = tx_names,
-      column    = "GENEID",
-      keytype   = "TXNAME",
-      multiVals = "first"
-    ),
-    error = function(e) {
-      message("Transcript -> gene mapping failed: ", conditionMessage(e))
-      stats::setNames(rep(NA_character_, length(tx_names)), tx_names)
-    }
-  ))
-  entrez_per_tx <- as.character(entrez_per_tx)
-
-  valid_entrez <- unique(stats::na.omit(entrez_per_tx))
+  # Step 3: map Entrez gene identifiers to symbols
+  entrez_per_gene <- as.character(all_genes$gene_id)
+  if (length(entrez_per_gene) != length(all_genes))
+    entrez_per_gene <- as.character(names(all_genes))
+  if (length(entrez_per_gene) != length(all_genes) ||
+      all(is.na(entrez_per_gene) | !nzchar(entrez_per_gene))) {
+    stop("TxDb gene ranges do not expose usable gene identifiers for ",
+         "symbol mapping.", call. = FALSE)
+  }
+  valid_entrez <- unique(
+    entrez_per_gene[!is.na(entrez_per_gene) & nzchar(entrez_per_gene)]
+  )
   symbol_per_entrez <- if (length(valid_entrez) > 0L) {
     suppressMessages(tryCatch(
       AnnotationDbi::mapIds(
@@ -119,19 +125,24 @@ plot_chip_heatmap <- function(bigwig_file,
   } else {
     stats::setNames(character(0), character(0))
   }
-  all_tss$SYMBOL <- unname(symbol_per_entrez[entrez_per_tx])
+  all_genes$SYMBOL <- unname(symbol_per_entrez[entrez_per_gene])
+  all_tss <- GenomicFeatures::promoters(
+    all_genes, upstream = 0, downstream = 1
+  )
+  all_tss$SYMBOL <- all_genes$SYMBOL
 
-  # Filter to target genes, one TSS per symbol
+  # Filter to promoter-associated genes, one gene-level TSS per symbol.
   tss_use <- all_tss[!is.na(all_tss$SYMBOL) &
                        all_tss$SYMBOL %in% target_genes]
   tss_use <- tss_use[!duplicated(tss_use$SYMBOL)]
 
-  message("Targets: ", length(target_genes),
-          " | TSS rows used: ", length(tss_use))
+  message("Genes with promoter-associated peaks: ", length(target_genes),
+          " | gene-level TSS rows used: ", length(tss_use))
 
   if (length(tss_use) == 0L)
-    stop("No TSS rows passed filtering. Check that peaks_file contains ",
-         "binding sites overlapping known TSSs.", call. = FALSE)
+    stop("No genes with promoter-associated peaks could be mapped to TxDb ",
+         "gene-level TSSs. Check peaks_file, tss_region, genome, and ",
+         "annotation compatibility.", call. = FALSE)
 
   # ── Step 4: build signal matrix around each TSS ──────────────
   bw  <- rtracklayer::import(bigwig_file, format = "BigWig")
@@ -147,15 +158,26 @@ plot_chip_heatmap <- function(bigwig_file,
   order_idx   <- order(rowSums(mat, na.rm = TRUE), decreasing = TRUE)
   mat_ordered <- mat[order_idx, ]
 
-  # Locate the highlighted target's row after sorting
-  target_idx  <- which(tss_use$SYMBOL == TARGET$symbol)
-  target_rank <- if (length(target_idx) > 0L) {
-    which(order_idx == target_idx[1])
+  # Locate the query gene after sorting. It is never inserted when absent.
+  query_idx  <- which(tss_use$SYMBOL == TARGET$symbol)
+  query_rank <- if (length(query_idx) > 0L) {
+    which(order_idx == query_idx[1])
   } else NA_integer_
 
-  if (!is.na(target_rank))
-    message(TARGET$symbol, " rank: ", target_rank, "/", nrow(mat),
-            " (top ", round(target_rank / nrow(mat) * 100, 1), "%)")
+  query_status <- if (!query_promoter_peak_detected) {
+    "no_promoter_peak_detected"
+  } else if (is.na(query_rank)) {
+    "promoter_peak_detected_not_ranked"
+  } else {
+    "promoter_peak_detected_and_ranked"
+  }
+
+  if (!is.na(query_rank))
+    message(TARGET$symbol, " rank: ", query_rank, "/", nrow(mat),
+            " (top ", round(query_rank / nrow(mat) * 100, 1), "%)")
+  if (identical(query_status, "promoter_peak_detected_not_ranked"))
+    message(TARGET$symbol, " had a promoter-associated peak but could not ",
+            "be mapped to a gene-level TxDb TSS, so no rank is reported.")
 
   # ── Step 5: color mapping (0 / 50% / 95% three-point ramp) ───
   col_fun <- circlize::colorRamp2(
@@ -168,6 +190,18 @@ plot_chip_heatmap <- function(bigwig_file,
   # ── Step 6: assemble EnrichedHeatmap ─────────────────────────
   # axis_name_gp = transparent: we draw our own -Nkb / TSS / +Nkb labels
   # via decorate_heatmap_body so label spacing scales with tss_window
+  query_label <- if (identical(
+    query_status, "promoter_peak_detected_and_ranked"
+  )) {
+    paste0(TARGET$symbol, " highlighted")
+  } else if (identical(
+    query_status, "promoter_peak_detected_not_ranked"
+  )) {
+    paste0(TARGET$symbol, ": promoter peak detected; TSS not ranked")
+  } else {
+    paste0(TARGET$symbol, ": no promoter-associated peak detected")
+  }
+
   ht <- EnrichedHeatmap::EnrichedHeatmap(
     mat_ordered,
     name = tf_name, col = col_fun,
@@ -180,8 +214,8 @@ plot_chip_heatmap <- function(bigwig_file,
       ),
       show_annotation_name = FALSE
     ),
-    column_title = paste0(tf_name, " Binding at Target Gene TSS (",
-                          TARGET$symbol, " highlighted)"),
+    column_title = paste0(tf_name, " ChIP-seq Signal at Gene-level TSSs (",
+                          query_label, ")"),
     column_title_gp = grid::gpar(fontsize = 14, fontface = "bold",
                                  col = palette$axis),
     show_row_names = FALSE,
@@ -198,10 +232,10 @@ plot_chip_heatmap <- function(bigwig_file,
   )
 
   # External link to the highlighted target row
-  if (!is.na(target_rank)) {
+  if (!is.na(query_rank)) {
     ht <- ht + ComplexHeatmap::rowAnnotation(
       mark = ComplexHeatmap::anno_mark(
-        at = target_rank, labels = TARGET$symbol,
+        at = query_rank, labels = TARGET$symbol,
         labels_gp = grid::gpar(fontsize = 10, fontface = "bold",
                                col = palette$peak),
         link_gp = grid::gpar(col = palette$peak, lwd = 1.5)
@@ -232,10 +266,10 @@ plot_chip_heatmap <- function(bigwig_file,
     })
 
     # Top-left rank stamp
-    if (!is.na(target_rank)) {
+    if (!is.na(query_rank)) {
       grid::grid.text(
-        paste0(TARGET$symbol, ": #", target_rank, "/", nrow(mat),
-               " (top ", round(target_rank / nrow(mat) * 100, 1), "%)"),
+        paste0(TARGET$symbol, ": #", query_rank, "/", nrow(mat),
+               " (top ", round(query_rank / nrow(mat) * 100, 1), "%)"),
         x = grid::unit(0.02, "npc"),
         y = grid::unit(0.98, "npc"),
         just = c("left", "top"),
@@ -245,10 +279,12 @@ plot_chip_heatmap <- function(bigwig_file,
   }
 
   invisible(list(
-    matrix    = mat_ordered,
-    order     = order_idx,
-    rank      = target_rank,
-    n_targets = nrow(mat),
-    target    = TARGET
+    matrix                       = mat_ordered,
+    order                        = order_idx,
+    rank                         = query_rank,
+    n_targets                    = nrow(mat),
+    query_promoter_peak_detected = query_promoter_peak_detected,
+    query_status                 = query_status,
+    target                       = TARGET
   ))
 }

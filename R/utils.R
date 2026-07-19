@@ -137,8 +137,36 @@
   peaks
 }
 
-# ── Axis label helper ────────────────────────────────────────
-# 2000 → "2kb",  500 → "500bp"
+# Promoter-associated gene extraction
+# ChIPseeker annotates every peak to a nearby gene. Restrict the heatmap gene
+# set to rows explicitly labelled "Promoter" so distal or intronic nearest-
+# gene assignments are not described as promoter-associated evidence.
+#' @keywords internal
+#' @noRd
+.promoter_target_status <- function(anno_df, query_symbol) {
+  required <- c("SYMBOL", "annotation")
+  missing_columns <- setdiff(required, colnames(anno_df))
+  if (length(missing_columns) > 0L) {
+    stop(
+      "Peak annotation is missing required column(s): ",
+      paste(missing_columns, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  symbols <- as.character(anno_df$SYMBOL)
+  annotations <- as.character(anno_df$annotation)
+  promoter_row <- !is.na(annotations) & grepl("^Promoter", annotations)
+  valid_symbol <- !is.na(symbols) & nzchar(symbols)
+  target_genes <- unique(symbols[promoter_row & valid_symbol])
+
+  list(
+    target_genes = target_genes,
+    query_promoter_peak_detected = query_symbol %in% target_genes
+  )
+}
+
+# Axis label helper: 2000 -> "2kb", 500 -> "500bp"
 #' @keywords internal
 #' @noRd
 .bp_label <- function(bp) {

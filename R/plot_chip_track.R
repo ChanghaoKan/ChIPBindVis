@@ -1,4 +1,4 @@
-#' Plot a ChIP-seq Gviz track at a target gene's promoter (Figure A)
+#' Plot a ChIP-seq Gviz track around a selected gene's TSS (Figure A)
 #'
 #' Builds a multi-track Gviz figure (ideogram, axis, signal, peaks, TSS,
 #' gene model) centered on the TSS of \code{gene_symbol}. Supports human
@@ -14,7 +14,7 @@
 #' @param bigwig_file Path to a bigWig signal file (\code{.bw} /
 #'   \code{.bigWig}).
 #' @param peaks_file Path to a narrowPeak or broadPeak file.
-#' @param gene_symbol Gene symbol of the target gene (e.g. \code{"KIF18A"}
+#' @param gene_symbol Gene symbol of the selected gene (e.g. \code{"KIF18A"}
 #'   for human or \code{"Kif18a"} for mouse).
 #' @param tf_name Display name of the transcription factor (used in track
 #'   and main titles).
@@ -59,7 +59,7 @@ plot_chip_track <- function(bigwig_file,
 
   message("Genome: ", genome)
   message("Transcription factor: ", tf_name)
-  message("Target gene: ", TARGET$symbol, "  ", TARGET$chr, ":",
+  message("Selected gene: ", TARGET$symbol, "  ", TARGET$chr, ":",
           format(TARGET$start, big.mark = ","), "-",
           format(TARGET$end,   big.mark = ","),
           "  (", TARGET$strand, "-strand)")
@@ -257,8 +257,8 @@ plot_chip_track <- function(bigwig_file,
       background.panel = palette$bg,
       background.title = palette$bg,
       col.border.title = NA,
-      main             = paste0(tf_name, " ChIP-seq at ",
-                                TARGET$symbol, " Promoter"),
+      main             = paste0(tf_name, " ChIP-seq near ",
+                                TARGET$symbol, " TSS"),
       cex.main         = 1.4,
       fontface.main    = 2,
       col.main         = palette$axis

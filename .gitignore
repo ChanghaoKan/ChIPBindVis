@@ -24,6 +24,10 @@ inst/doc
 # Coverage / check output
 .Rcheck/
 *.Rcheck/
+coverage/
+.covr
+*.Rout
+*.Rout.fail
 
 # OS junk
 .DS_Store
@@ -39,3 +43,7 @@ Thumbs.db
 # Local environment / secrets
 .Renviron
 .env
+
+# renv local state (keep lockfiles and project metadata trackable)
+renv/library/
+renv/staging/
