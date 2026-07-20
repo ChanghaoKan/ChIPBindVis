@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "ChIPBindVis: ChIP-seq signal and promoter-associated peak visualization around gene TSSs"
+title: "ChIPBindVis: ChIP-seq Signal and Peak Visualization at Gene Promoters"
 abstract: >-
   ChIPBindVis is an R package for visualizing ChIP-seq signal and called
   peaks around a selected gene and across genes with promoter-associated
@@ -18,9 +18,9 @@ version: "0.2.1"
 date-released: "2026-07-21"
 license: MIT
 repository-code: "https://github.com/ChanghaoKan/ChIPBindVis"
-repository-artifact: "https://doi.org/10.5281/zenodo.19613844"
+repository-artifact: "https://doi.org/10.5281/zenodo.21461267"
 url: "https://github.com/ChanghaoKan/ChIPBindVis"
-doi: 10.5281/zenodo.19613844
+doi: "10.5281/zenodo.21461267"
 keywords:
   - ChIP-seq
   - bioinformatics
