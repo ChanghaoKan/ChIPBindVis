@@ -1,4 +1,4 @@
-#' One-command ChIP-seq binding visualization (Figures A + B)
+#' One-command ChIP-seq signal and peak visualization (Figures A + B)
 #'
 #' High-level wrapper that calls \code{\link{plot_chip_track}} and
 #' \code{\link{plot_chip_heatmap}} in sequence. Both figures are drawn on

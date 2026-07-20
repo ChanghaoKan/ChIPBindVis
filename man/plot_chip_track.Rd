@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_chip_track.R
 \name{plot_chip_track}
 \alias{plot_chip_track}
-\title{Plot a ChIP-seq Gviz track at a target gene's promoter (Figure A)}
+\title{Plot a ChIP-seq Gviz track around a selected gene's TSS (Figure A)}
 \usage{
 plot_chip_track(
   bigwig_file,
@@ -21,7 +21,7 @@ plot_chip_track(
 
 \item{peaks_file}{Path to a narrowPeak or broadPeak file.}
 
-\item{gene_symbol}{Gene symbol of the target gene (e.g. \code{"KIF18A"}
+\item{gene_symbol}{Gene symbol of the selected gene (e.g. \code{"KIF18A"}
 for human, \code{"Kif18a"} for mouse).}
 
 \item{tf_name}{Display name of the transcription factor (used in track

@@ -2,7 +2,7 @@
 % Please edit documentation in R/chip_bindingVis.R
 \name{chip_bindingVis}
 \alias{chip_bindingVis}
-\title{One-command ChIP-seq binding visualization (Figures A + B)}
+\title{One-command ChIP-seq signal and peak visualization (Figures A + B)}
 \usage{
 chip_bindingVis(
   bigwig_file,
@@ -28,7 +28,7 @@ chip_bindingVis(
 
 \item{peaks_file}{Path to a narrowPeak or broadPeak file.}
 
-\item{gene_symbol}{Gene symbol of the target gene (e.g. \code{"KIF18A"}
+\item{gene_symbol}{Gene symbol of the selected gene (e.g. \code{"KIF18A"}
 for human, \code{"Kif18a"} for mouse).}
 
 \item{tf_name}{Display name of the transcription factor.}

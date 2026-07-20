@@ -4,13 +4,12 @@
 \name{ChIPBindVis-package}
 \alias{ChIPBindVis}
 \alias{ChIPBindVis-package}
-\title{ChIPBindVis: ChIP-seq Binding Visualization at Target Gene Promoters}
+\title{ChIPBindVis: ChIP-seq Signal and Peak Visualization at Gene Promoters}
 \description{
-One-command, publication-ready ChIP-seq binding visualization at target gene
-promoters. Given a bigWig signal track and a narrowPeak file, the package
-produces (A) a Gviz genome-browser view centered on a target gene's TSS, and
-(B) an EnrichedHeatmap across all peak-annotated target gene TSSs, with the
-query gene highlighted.
+Visualizes ChIP-seq signal and called peaks around a selected gene and across
+gene-level TSSs with promoter-associated peaks. The query gene is highlighted
+only when a promoter-associated peak is detected within the configured window.
+Supports human (hg38, hg19) and mouse (mm10, mm39) assemblies.
 }
 \section{Main functions}{
 
@@ -23,10 +22,16 @@ query gene highlighted.
 }
 }
 
-\section{Genome}{
+\section{Supported genomes}{
 
-Hard-coded to human hg38 via
-\pkg{TxDb.Hsapiens.UCSC.hg38.knownGene} and \pkg{org.Hs.eg.db}.
+\describe{
+  \item{hg38}{Human GRCh38 (default)}
+  \item{hg19}{Human GRCh37}
+  \item{mm10}{Mouse GRCm38}
+  \item{mm39}{Mouse GRCm39}
+}
+Required annotation packages are loaded on demand and only need to be
+installed for the genome(s) actually used.
 }
 
 \seealso{
@@ -37,6 +42,6 @@ Useful links:
 }
 }
 \author{
-\strong{Maintainer}: Changhao Kan \email{kanchanghao@example.com}
+\strong{Maintainer}: Changhao Kan \email{kch_ynu@163.com}
 }
 \keyword{internal}

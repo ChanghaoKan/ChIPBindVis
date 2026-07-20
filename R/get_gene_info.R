@@ -17,7 +17,7 @@
 #' the gene \code{start}; for negative-strand (\code{-}) genes it equals
 #' \code{end}. Downstream functions center their views on this coordinate,
 #' and \pkg{EnrichedHeatmap}'s \code{normalizeToMatrix} automatically
-#' reverses the signal matrix for negative-strand targets so that the
+#' reverses the signal matrix for negative-strand rows so that the
 #' left side of every heatmap row always represents upstream sequence.
 #'
 #' @export

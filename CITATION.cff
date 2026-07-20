@@ -1,24 +1,24 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "ChIPBindVis: One-command publication-ready ChIP-seq binding visualization at target gene promoters"
+title: "ChIPBindVis: ChIP-seq signal and promoter-associated peak visualization around gene TSSs"
 abstract: >-
-  ChIPBindVis is an R package providing one-command, publication-ready
-  ChIP-seq binding visualization at target gene promoters. Given a bigWig
-  signal file and a narrowPeak (or broadPeak) file, it produces (A) a Gviz
-  genome-browser track centered on a target gene's TSS and (B) a strand-aware
-  EnrichedHeatmap across all peak-annotated target gene TSSs, with the
-  query gene highlighted. Supports human (hg38, hg19) and mouse (mm10, mm39)
-  reference assemblies.
+  ChIPBindVis is an R package for visualizing ChIP-seq signal and called
+  peaks around a selected gene and across genes with promoter-associated
+  peaks. It produces a Gviz track centered on the selected gene's TSS and a
+  strand-aware EnrichedHeatmap across gene-level TSSs. The query gene is
+  highlighted only when a promoter-associated peak is detected within the
+  configured annotation window. It supports human (hg38, hg19) and mouse
+  (mm10, mm39) reference assemblies.
 type: software
 authors:
   - family-names: "Kan"
     given-names: "Changhao"
     email: "kch_ynu@163.com"
-    # orcid: "https://orcid.org/0000-0000-0000-0000"  # ← 如果有 ORCID 取消注释填上
-version: v0.2.0
-date-released: "2026-05-22"
+version: "0.2.1"
+date-released: "2026-07-21"
 license: MIT
 repository-code: "https://github.com/ChanghaoKan/ChIPBindVis"
+repository-artifact: "https://doi.org/10.5281/zenodo.19613844"
 url: "https://github.com/ChanghaoKan/ChIPBindVis"
 doi: 10.5281/zenodo.19613844
 keywords:

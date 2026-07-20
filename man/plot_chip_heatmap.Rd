@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_chip_heatmap.R
 \name{plot_chip_heatmap}
 \alias{plot_chip_heatmap}
-\title{Plot a ChIP-seq EnrichedHeatmap across all target gene TSSs (Figure B)}
+\title{Plot a TSS enrichment heatmap of ChIP-seq signal (Figure B)}
 \usage{
 plot_chip_heatmap(
   bigwig_file,
@@ -21,7 +21,7 @@ plot_chip_heatmap(
 
 \item{peaks_file}{Path to a narrowPeak or broadPeak file.}
 
-\item{gene_symbol}{Gene symbol of the target gene (e.g. \code{"KIF18A"}
+\item{gene_symbol}{Gene symbol of the selected gene (e.g. \code{"KIF18A"}
 for human, \code{"Kif18a"} for mouse).}
 
 \item{tf_name}{Display name of the transcription factor.}
@@ -29,12 +29,11 @@ for human, \code{"Kif18a"} for mouse).}
 \item{genome}{Reference genome assembly: \code{"hg38"} (default),
 \code{"hg19"}, \code{"mm10"}, or \code{"mm39"}.}
 
-\item{tss_window}{Half-window (bp) around each TSS for the signal matrix
-(default \code{2000}). X-axis labels are generated automatically from this
-value (e.g. \code{"-2kb"}, \code{"+2kb"}).}
+\item{tss_window}{Half-window in bp around each TSS for the signal
+matrix (default \code{2000}).}
 
-\item{tss_region}{2-element integer vector defining the promoter window
-used by \pkg{ChIPseeker} when assigning peaks to genes
+\item{tss_region}{Two-element numeric vector passed to
+\code{ChIPseeker::annotatePeak} for peak-to-gene assignment
 (default \code{c(-2000, 2000)}).}
 
 \item{palette}{A named list of colors, typically from
@@ -44,25 +43,31 @@ used by \pkg{ChIPseeker} when assigning peaks to genes
 active graphics device.}
 }
 \value{
-Invisibly, a list with:
-\describe{
-  \item{matrix}{Signal matrix, rows sorted by total signal (decreasing).}
-  \item{target_rank}{Integer rank of the query gene (\code{NA} if absent).}
-  \item{n_targets}{Number of TSSs in the heatmap.}
-  \item{tss_gr}{The \code{GRanges} of TSSs used.}
-}
+Invisibly, a list with \code{matrix} (sorted normalized
+matrix), \code{order} (row order indices), \code{rank} (rank of the
+query gene, or \code{NA}), \code{n_targets} (total rows),
+\code{query_promoter_peak_detected} (logical), \code{query_status}
+(character), and \code{target} (resolved gene info).
 }
 \description{
-Annotates peaks to nearest genes via \pkg{ChIPseeker}, builds a
-TSS-centered \pkg{EnrichedHeatmap} of the bigWig signal across all target
-genes, ranks them by total signal, and highlights the query gene. Signal
-windows for negative-strand genes are automatically reversed so that the
-left side of every row corresponds to upstream sequence.
+Builds an \code{\link[EnrichedHeatmap]{EnrichedHeatmap}} of ChIP-seq
+signal centered on a gene-level TSS for genes with a promoter-associated
+peak, sorted by total signal. If the query gene has a promoter-associated
+peak it is highlighted and ranked; otherwise it is not added to the heatmap
+and the return value reports that status.
+}
+\details{
+Peak-to-gene annotations are obtained with
+\code{ChIPseeker::annotatePeak}; only rows classified as promoter peaks
+within \code{tss_region} contribute genes. Each gene contributes a
+gene-level TSS derived from its TxDb gene range. This is not an isoform-
+specific or canonical-transcript TSS assignment.
 }
 \examples{
 \dontrun{
 res <- plot_chip_heatmap("E2F8.bigWig", "E2F8.narrowPeak", "KIF18A", "E2F8")
-res$target_rank
+res$rank
+res$query_status
 
 # Mouse
 plot_chip_heatmap("E2f8.bigWig", "E2f8.narrowPeak", "Kif18a", "E2f8",

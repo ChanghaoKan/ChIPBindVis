@@ -1,3 +1,18 @@
+# ChIPBindVis 0.2.1
+
+## Correctness and reproducibility updates
+
+* Corrected the bundled ENCODE example metadata: `ENCFF354YZN` and
+  `ENCFF049BWK` are E2F1 files from experiment `ENCSR717ZZW`, not E2F8.
+* Heatmap rows are now restricted to genes with annotations classified as
+  promoter peaks within `tss_region`; distal nearest-gene assignments are not
+  described as promoter-associated targets.
+* A query gene without a promoter-associated peak is no longer inserted into
+  the heatmap. `rank` is `NA`, and `query_promoter_peak_detected` plus
+  `query_status` make the outcome explicit.
+* Heatmap TSSs are derived from TxDb gene ranges and documented as gene-level
+  proxies rather than canonical-transcript TSSs.
+
 # ChIPBindVis 0.2.0
 
 ## New features
@@ -24,8 +39,8 @@
 
 ## API changes
 
-* `plot_chip_heatmap()` return value now includes `n_targets` (total
-  number of target TSSs in the heatmap) alongside `target_rank`.
+* `plot_chip_heatmap()` return value includes `n_targets` (total
+  number of target TSSs in the heatmap) alongside `rank`.
 * Mouse gene symbols must follow title case (e.g. `"Kif18a"`, not
   `"KIF18A"`).
 

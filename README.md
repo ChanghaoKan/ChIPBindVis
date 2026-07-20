@@ -7,28 +7,29 @@
   \_____|_| |_|_____|_|    |____/|_|_| |_|\__,_|   |_|  |_|___/
 ```
 
-*One-command publication-ready ChIP-seq binding visualization at target gene promoters*
+*ChIP-seq signal and promoter-associated peak visualization around gene TSSs*
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19613844.svg)](https://doi.org/10.5281/zenodo.19613844)
+[![R-CMD-check](https://github.com/ChanghaoKan/ChIPBindVis/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ChanghaoKan/ChIPBindVis/actions/workflows/R-CMD-check.yaml)
 ![R >= 4.3](https://img.shields.io/badge/R->=4.3-blue?logo=r)
 ![Bioconductor](https://img.shields.io/badge/Bioconductor-powered-green)
 ![License: MIT](https://img.shields.io/badge/license-MIT-yellow)
-![Version](https://img.shields.io/badge/version-0.2.0-orange)
+![Version](https://img.shields.io/badge/version-0.2.1-orange)
 
 ---
 
 ## What it does
 
-You have a **bigWig** signal file and a **bed** (or **broadPeak**) file from a ChIP-seq experiment. You want to know: *does my transcription factor bind the promoter of gene X, and how does that compare to all its other targets?*
+You have a **bigWig** signal file and a **bed** (or **broadPeak**) file from a ChIP-seq experiment. You want to inspect signal near gene X and ask whether its configured promoter window has an associated called peak, then compare TSS-centered signal across other genes with promoter-associated peaks.
 
-ChIPBindVis answers this in **one function call** and **two figures**:
+ChIPBindVis produces **two complementary views in one function call**:
 
-| Figure | Preview |
+| Output | Description |
 |---|---|
-| **Track Plot & Enrichment Heatmap** | <img width="1007" height="503" alt="image" src="https://github.com/user-attachments/assets/46f276dc-1351-4d3c-8868-ce3a703bb5d6" /> |
-| Description | *Gviz genome browser tracks centered on transcription start sites (TSSs) together with EnrichedHeatmap signals across TF target gene promoters.* |
+| **Selected-gene track** | Gviz signal, called peaks, TSS marker, and nearby gene models around the selected TSS. |
+| **TSS enrichment heatmap** | ChIP-seq signal across gene-level TSSs that have promoter-associated peaks, with conditional query highlighting. |
 
-Built with a consistent **Morandi color palette** — muted, publication-ready tones designed for clean manuscript integration without additional styling.
+Built with a consistent **Morandi color palette** — muted tones intended as a configurable starting point for manuscript figures.
 
 ---
 
@@ -81,7 +82,7 @@ devtools::install_github("ChanghaoKan/ChIPBindVis")
 Or install locally:
 
 ```r
-devtools::install_local("ChIPBindVis-0.2.0.tar.gz")
+devtools::install_local("ChIPBindVis-0.2.1.tar.gz")
 # or from an unpacked source directory:
 devtools::install("path/to/ChIPBindVis")
 ```
@@ -97,12 +98,20 @@ library(ChIPBindVis)
 
 chip_bindingVis(
   bigwig_file = "ENCFF354YZN.bigWig",
-  peaks_file  = "ENCFF049BWK.bed",
+  peaks_file  = "ENCFF049BWK.bed.gz",
   gene_symbol = "KIF18A",
-  tf_name     = "E2F8",
+  tf_name     = "E2F1",
   genome      = "hg38"        # explicit — do not omit
 )
 ```
+
+These two ENCODE files belong to the released
+[E2F1 TF ChIP-seq experiment ENCSR717ZZW](https://www.encodeproject.org/experiments/ENCSR717ZZW/)
+in HepG2: [ENCFF354YZN](https://www.encodeproject.org/files/ENCFF354YZN/)
+is the GRCh38 signal p-value bigWig and
+[ENCFF049BWK](https://www.encodeproject.org/files/ENCFF049BWK/) is the
+IDR-thresholded narrowPeak file. The `tf_name` is therefore `"E2F1"`, not
+`"E2F8"`.
 
 ### Human hg19
 
@@ -146,11 +155,11 @@ chip_bindingVis(
 ```r
 chip_bindingVis(
   bigwig_file = "ENCFF354YZN.bigWig",
-  peaks_file  = "ENCFF049BWK.bed",
+  peaks_file  = "ENCFF049BWK.bed.gz",
   gene_symbol = "KIF18A",
-  tf_name     = "E2F8",
+  tf_name     = "E2F1",
   genome      = "hg38",
-  save_pdf    = TRUE           # output: E2F8_KIF18A_ChIPBindVis.pdf
+  save_pdf    = TRUE           # output: E2F1_KIF18A_ChIPBindVis.pdf
 )
 ```
 
@@ -188,8 +197,10 @@ res <- plot_chip_heatmap(
   tf_name     = "E2F8",
   genome      = "hg38"
 )
-res$target_rank   # integer rank among all TF targets
-res$n_targets     # total number of target TSSs in the heatmap
+res$rank                          # rank among promoter-associated gene TSSs
+res$n_targets                     # number of TSS rows in the heatmap
+res$query_promoter_peak_detected  # TRUE only if the query has a promoter peak
+res$query_status                  # explicit detected/ranked status
 
 # Gene info lookup
 get_gene_info("KIF18A",  genome = "hg38")  # human
@@ -256,6 +267,20 @@ chip_bindingVis(
 > **broadPeak** files (e.g. from histone ChIP-seq) are automatically detected
 > from the filename — no extra argument needed.
 
+## Interpretation
+
+`plot_chip_heatmap()` uses `ChIPseeker::annotatePeak()` and retains only
+annotations classified as promoter peaks within `tss_region`. The query gene
+is highlighted and ranked only when it is in that promoter-associated set. If
+it is absent, ChIPBindVis does **not** insert it into the heatmap; `rank` is
+`NA`, `query_promoter_peak_detected` is `FALSE`, and `query_status` explains
+the result.
+
+Each row uses a gene-level TSS derived from the TxDb gene range. It is not a
+claim about a canonical transcript or a specific isoform. A promoter-associated
+ChIP-seq peak supports an association in the supplied experiment, but by itself
+does not establish direct TF–DNA binding or transcriptional regulation.
+
 ---
 
 ## Strand handling
@@ -287,50 +312,30 @@ This R package was developed with assistance from **Claude** (Anthropic).
 
 ## Citation
 
-If you use ChIPBindVis in your research, please cite it as below. The DOI
-shown is the **concept DOI**, which always resolves to the latest version.
+For reproducibility, cite the archived version used. This branch prepares the
+v0.2.1 correctness release. After the tag is archived, replace this note with
+the new version-specific Zenodo DOI. The concept DOI
+<https://doi.org/10.5281/zenodo.19613844> resolves to the latest archived
+version; the previous v0.2.0 archive remains available at
+<https://doi.org/10.5281/zenodo.20349422>.
 
-> Kan, C. (2026). ChIPBindVis: One-command publication-ready ChIP-seq
-> binding visualization at target gene promoters. Zenodo.
-> <https://doi.org/10.5281/zenodo.19613844>
+> Kan, C. (2026). ChIPBindVis: ChIP-seq signal and promoter-associated
+> peak visualization around gene TSSs (Version 0.2.1). Zenodo.
+> Concept DOI: <https://doi.org/10.5281/zenodo.19613844>
 
 ```bibtex
 @software{kan2026chipbindvis,
   author    = {Kan, Changhao},
-  title     = {{ChIPBindVis: One-command publication-ready ChIP-seq
-               binding visualization at target gene promoters}},
+  title     = {{ChIPBindVis: ChIP-seq signal and promoter-associated
+               peak visualization around gene TSSs}},
+  version   = {0.2.1},
   year      = {2026},
   publisher = {Zenodo},
   doi       = {10.5281/zenodo.19613844},
   url       = {https://doi.org/10.5281/zenodo.19613844}
 }
 ```
-
-To cite a specific version (recommended for reproducibility), use the
-version-specific DOI shown on that version's Zenodo page.## Citation
-
-If you use ChIPBindVis in your research, please cite it as below. The DOI
-shown is the **concept DOI**, which always resolves to the latest version.
-
-> Kan, C. (2026). ChIPBindVis: One-command publication-ready ChIP-seq
-> binding visualization at target gene promoters. Zenodo.
-> <https://doi.org/10.5281/zenodo.19613844>
-
-```bibtex
-@software{kan2026chipbindvis,
-  author    = {Kan, Changhao},
-  title     = {{ChIPBindVis: One-command publication-ready ChIP-seq
-               binding visualization at target gene promoters}},
-  year      = {2026},
-  publisher = {Zenodo},
-  doi       = {10.5281/zenodo.19613844},
-  url       = {https://doi.org/10.5281/zenodo.19613844}
-}
-```
-
-To cite a specific version (recommended for reproducibility), use the
-version-specific DOI shown on that version's Zenodo page.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE.md)

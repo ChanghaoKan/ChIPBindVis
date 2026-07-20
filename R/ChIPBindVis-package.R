@@ -1,7 +1,9 @@
-#' ChIPBindVis: ChIP-seq Binding Visualization at Target Gene Promoters
+#' ChIPBindVis: ChIP-seq Signal and Peak Visualization at Gene Promoters
 #'
-#' One-command, publication-ready ChIP-seq binding visualization at target
-#' gene promoters. Supports human (hg38, hg19) and mouse (mm10, mm39)
+#' Visualizes ChIP-seq signal and called peaks around a selected gene and
+#' across gene-level TSSs with promoter-associated peaks. The query gene is
+#' highlighted only when a promoter-associated peak is detected within the
+#' configured window. Supports human (hg38, hg19) and mouse (mm10, mm39)
 #' assemblies.
 #'
 #' @section Main functions:
