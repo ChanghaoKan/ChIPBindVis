@@ -312,27 +312,25 @@ This R package was developed with assistance from **Claude** (Anthropic).
 
 ## Citation
 
-For reproducibility, cite the archived version used. This branch prepares the
-v0.2.1 correctness release. After the tag is archived, replace this note with
-the new version-specific Zenodo DOI. The concept DOI
-<https://doi.org/10.5281/zenodo.19613844> resolves to the latest archived
-version; the previous v0.2.0 archive remains available at
-<https://doi.org/10.5281/zenodo.20349422>.
+For reproducibility, cite the archived version used. The v0.2.1 archive is
+available at <https://doi.org/10.5281/zenodo.21461267>. The concept DOI
+<https://doi.org/10.5281/zenodo.19613844> always resolves to the latest
+archived version.
 
-> Kan, C. (2026). ChIPBindVis: ChIP-seq signal and promoter-associated
-> peak visualization around gene TSSs (Version 0.2.1). Zenodo.
-> Concept DOI: <https://doi.org/10.5281/zenodo.19613844>
+> Kan, C. (2026). ChIPBindVis: ChIP-seq Signal and Peak Visualization at Gene
+> Promoters (Version 0.2.1). Zenodo.
+> <https://doi.org/10.5281/zenodo.21461267>
 
 ```bibtex
 @software{kan2026chipbindvis,
   author    = {Kan, Changhao},
-  title     = {{ChIPBindVis: ChIP-seq signal and promoter-associated
-               peak visualization around gene TSSs}},
+  title     = {{ChIPBindVis: ChIP-seq Signal and Peak Visualization at Gene
+               Promoters}},
   version   = {0.2.1},
   year      = {2026},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.19613844},
-  url       = {https://doi.org/10.5281/zenodo.19613844}
+  doi       = {10.5281/zenodo.21461267},
+  url       = {https://doi.org/10.5281/zenodo.21461267}
 }
 ```
 
