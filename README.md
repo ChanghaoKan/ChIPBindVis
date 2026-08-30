@@ -110,8 +110,7 @@ These two ENCODE files belong to the released
 in HepG2: [ENCFF354YZN](https://www.encodeproject.org/files/ENCFF354YZN/)
 is the GRCh38 signal p-value bigWig and
 [ENCFF049BWK](https://www.encodeproject.org/files/ENCFF049BWK/) is the
-IDR-thresholded narrowPeak file. The `tf_name` is therefore `"E2F1"`, not
-`"E2F8"`.
+IDR-thresholded narrowPeak file.
 
 ### Human hg19
 
